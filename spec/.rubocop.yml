@@ -1,0 +1,13 @@
+inherit_from: ../.rubocop.yml
+
+Style/MethodCallWithArgsParentheses:
+  inherit_mode:
+    merge:
+      - AllowedPatterns
+      - AllowedMethods
+  AllowedMethods:
+    - assert
+    - refute
+  AllowedPatterns:
+    - "^assert_"
+    - "^refute_"
