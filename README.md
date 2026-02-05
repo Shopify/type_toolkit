@@ -113,6 +113,51 @@ EmailNotifier.new.send_notification("Hello, world!") # ❌ TypeToolkit::Abstract
 # => Abstract method #send_notification was never implemented.
 ```
 
+### Abstract Classes
+
+Abstract classes are partially-implemented classes that leave some abstract methods to be implemented by subclasses.
+
+Example:
+
+```ruby
+class Widget
+  abstract!
+
+  # @override
+  #: -> void
+  abstract def draw; end
+end
+
+class Button < Widget
+  # @override
+  #: -> void
+  def draw
+    puts "Drawing a button"
+  end
+end
+
+Button.new.draw # ✅
+# => Drawing a button
+```
+
+Just like abstract methods on interfaces, the Type Toolkit runtime will raise an error if you try to call an unimplemented abstract method on an abstract class:
+
+```ruby
+class TextBox < Widget
+  # Oops, forgot to implement `#draw`!
+end
+
+TextBox.new.draw # ❌ TypeToolkit::AbstractMethodNotImplementedError
+# => Abstract method #draw was never implemented.
+```
+
+Abstract classes are incomplete, so it wouldn't make sense to instantiate them directly. The Type Toolkit runtime will raise an error if you try to do so:
+
+```ruby
+Widget.new # ❌ TypeToolkit::CannotInstantiateAbstractClassError
+# => Widget is declared as abstract; it cannot be instantiated
+```
+
 ## Guiding Principles
 
 ### Blazingly fast™
