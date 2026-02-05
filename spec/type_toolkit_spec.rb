@@ -7,9 +7,5 @@ module TypeToolkit
     it "has a version number" do
       refute_nil ::TypeToolkit::VERSION
     end
-
-    it "does something useful" do
-      assert false
-    end
   end
 end
