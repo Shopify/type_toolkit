@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+module TypeToolkit
+  module MethodPatch
+    # Returns true if this method is an abstract method that hasn't been implemented.
+    # Calling it will raise an `AbstractMethodNotImplementedError`.
+    def abstract?
+      return false unless TypeToolkit::HasAbstractMethods === owner
+
+      owner.abstract_method?(name)
+    end
+  end
+end
