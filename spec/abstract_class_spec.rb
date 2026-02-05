@@ -4,154 +4,140 @@ require "spec_helper"
 require "type_toolkit/ext"
 
 module TypeToolkit
-  class InterfaceSpec < Minitest::Spec
-    module SimpleInterface
-      interface!
+  class AbstractClassSpec < Minitest::Spec
+    # A class that has some abstract methods.
+    # *Note* this is _not_ an abstract class.
+    class AbstractClass
+      abstract!
 
-      abstract def m1 = assert_never_called!
-      abstract def m2 = assert_never_called!
+      abstract def m1; end
+      abstract def m2; end
+
+      def concrete_method = "AbstractClass#concrete_method"
     end
 
-    # A normal class that's completely unrelated `SimpleInterface`.
-    class NonImpl
-      def m1 = "NonImpl#m1"
+    # A class that does not implement any of `AbstractClass`'s abstract methods.
+    class NonImpl < AbstractClass
+    end
+
+    class PartialImpl < AbstractClass
+      def m1 = "PartialImpl#m1"
       # Does not implement `m2`
     end
 
-    # A class that implements some but not all of the SimpleInterface's abstract methods.
-    class PartialImpl
-      include SimpleInterface
-
-      def m1 = "PartialImpl#m1"
-      # Does not provide an implementation for `m2`
-    end
-
-    # A class that implements all of the SimpleInterface's abstract methods.
-    class FullImpl
-      include SimpleInterface
-
-      def initialize
-        @a = 1
-        @b = 2
-      end
-
+    class FullImpl < AbstractClass
       def m1 = "FullImpl#m1"
       def m2 = "FullImpl#m2"
     end
 
     # A class that provides a partial implementation of `SimpleInterface` for `PartiallyInheritsItsImpl`.
-    class PartialParent
-      def m1 = "PartialParent#m1"
+    module PartialParentModule
+      def m1 = "PartialParentModule#m1"
       # Does not implement `m2`
     end
 
     # A class that implements all of the SimpleInterface's abstract methods, some via inheritance and some via direct implementation.
-    class PartiallyInheritsItsImpl < PartialParent
-      include SimpleInterface
+    class PartiallyInheritsItsImpl < AbstractClass
+      include PartialParentModule # This doesn't actually end up earlier in the ancestor chain than `AbstractClass`.
 
       def m2 = "PartiallyInheritsItsImpl#m2"
     end
 
-    describe "An interface" do
+    describe "An abstract class" do
+      it "cannot be instantiated" do
+        skip "Not implemented yet"
+        assert_raises { AbstractClass.new }
+      end
+
       describe ".abstract_instance_methods" do
         it "only contains the abstract methods" do
-          assert_equal [:m1, :m2], SimpleInterface.abstract_instance_methods
+          assert_equal [:m1, :m2], AbstractClass.abstract_instance_methods
         end
       end
 
       describe ".abstract_method?" do
         it "returns true for abstract methods" do
-          assert SimpleInterface.abstract_method?(:m1)
-          assert SimpleInterface.abstract_method?(:m2)
+          assert AbstractClass.abstract_method?(:m1)
+          assert AbstractClass.abstract_method?(:m2)
         end
 
         it "returns false for non-abstract methods" do
-          refute SimpleInterface.abstract_method?(:inspect)
+          refute AbstractClass.abstract_method?(:concrete_method)
         end
       end
 
       describe ".abstract_method_declared?" do
         it "returns true for abstract methods" do
-          assert SimpleInterface.abstract_method_declared?(:m1)
-          assert SimpleInterface.abstract_method_declared?(:m2)
+          assert AbstractClass.abstract_method_declared?(:m1)
+          assert AbstractClass.abstract_method_declared?(:m2)
         end
 
         it "returns false for non-abstract methods" do
-          refute SimpleInterface.abstract_method_declared?(:inpsect)
+          refute AbstractClass.abstract_method_declared?(:concrete_method)
         end
       end
     end
 
-    describe "A class that does not implement the interface" do
-      describe "a method with the same name as another interface's members" do
-        # These tests sanity-check that our runtime trickery didn't accidentally change the
-        # normal behaviour of method calling and `method_missing` for unrelated classes.
+    describe "A class that does not implement any abstract methods" do
+      before do
+        @class = NonImpl
+      end
 
-        before do
-          @class = NonImpl
-          @x = NonImpl.new
+      it "cannot be instantiated" do
+        skip "Not implemented yet"
+        assert_raises { NonImpl.new }
+      end
+
+      # describe "a method with the same name as another interface's members" do
+      #   # These tests sanity-check that our runtime trickery didn't accidentally change the
+      #   # normal behaviour of method calling and `method_missing` for unrelated classes.
+
+      #   it "calls a defined method like normal" do
+      #     assert_respond_to @x, :m1
+      #     assert_equal "NonImpl#m1", @x.m1
+      #     assert_equal "NonImpl#m1", @x.method(:m1).call
+      #     refute_predicate @x.method(:m1), :abstract?
+      #     refute_predicate @x.method(:m1).unbind, :abstract?
+      #   end
+      # end
+
+      # it "raises NoMethodError for an undefined method like normal" do
+      #   refute_respond_to @x, :does_not_exist
+      #   assert_raises(NameError) { @x.method(:does_not_exist) }
+      #   assert_raises(NameError) { @class.instance_method(:does_not_exist) }
+      #   assert_raises(NoMethodError) { @x.does_not_exist }
+      # end
+
+      describe ".abstract_method?" do
+        it "returns true for abstract methods that have not been implemented" do
+          assert @class.abstract_method?(:m1)
+          assert @class.abstract_method?(:m2)
         end
 
-        it "#respond_to? returns true" do
-          assert_respond_to @x, :m1
-        end
-
-        it "can be called like normal" do
-          assert_equal "NonImpl#m1", @x.m1
-        end
-
-        describe "a Method object for it" do
-          it "can be called like normal" do
-            assert_equal "NonImpl#m1", @x.method(:m1).call
-          end
-
-          it "is not abstract" do
-            refute_predicate @x.method(:m1), :abstract?
-          end
-        end
-
-        describe "an UnboundMethod object for it" do
-          before { @um = @x.method(:m1).unbind }
-          it "can be called like normal" do
-            assert_equal "NonImpl#m1", @um.bind_call(@x)
-          end
-
-          it "is not abstract" do
-            refute_predicate @um, :abstract?
-          end
-        end
-
-        it "calls a defined method like normal" do
-          assert_respond_to @x, :m1
-          assert_equal "NonImpl#m1", @x.m1
-          assert_equal "NonImpl#m1", @x.method(:m1).call
-          refute_predicate @x.method(:m1), :abstract?
-          refute_predicate @x.method(:m1).unbind, :abstract?
-        end
-
-        it "raises NoMethodError for an undefined method like normal" do
-          refute_respond_to @x, :m2
-          assert_raises(NoMethodError) { @x.m2 }
+        it "returns false for non-abstract methods" do
+          refute @class.abstract_method?(:concrete_method)
         end
       end
 
-      it "does not respond to .abstract_method?" do
-        refute_respond_to @class, :abstract_method?
-        assert_raises(NoMethodError) { @class.abstract_method?(:m1) }
+      describe ".abstract_method_declared?" do
+        it "is true for all abstract methods" do
+          assert @class.abstract_method_declared?(:m1)
+          assert @class.abstract_method_declared?(:m2)
+        end
+
+        it "is false for non-abstract methods" do
+          refute @class.abstract_method_declared?(:concrete_method)
+        end
       end
 
-      it "does not respond to .abstract_method_declared?" do
-        refute_respond_to @class, :abstract_method_declared?
-        assert_raises(NoMethodError) { @class.abstract_method_declared?(:m1) }
-      end
-
-      it "does not respond to .abstract_instance_methods" do
-        refute_respond_to @class, :abstract_instance_methods
-        assert_raises(NoMethodError) { @class.abstract_instance_methods }
+      describe ".abstract_instance_methods" do
+        it "returns all abstract methods" do
+          assert_equal [:m1, :m2], @class.abstract_instance_methods
+        end
       end
     end
 
-    describe "A class that partially implements the abstract methods" do
+    describe "A class that partially implements the interface" do
       before do
         @class = PartialImpl
         @x = PartialImpl.new
@@ -204,6 +190,10 @@ module TypeToolkit
         it "returns false for non-abstract methods" do
           refute @class.abstract_method?(:inspect)
         end
+
+        it "is not defined on instances of the class" do
+          refute_respond_to @x, :abstract_method?
+        end
       end
 
       describe ".abstract_method_declared?" do
@@ -215,6 +205,10 @@ module TypeToolkit
         it "is false for non-abstract methods" do
           refute @class.abstract_method_declared?(:inspect)
         end
+
+        it "is not defined on instances of the class" do
+          refute_respond_to @x, :abstract_method_declared?
+        end
       end
 
       describe ".abstract_instance_methods" do
@@ -222,10 +216,14 @@ module TypeToolkit
           # ... even `#m1`, which has been implemented
           assert_equal [:m1, :m2], @class.abstract_instance_methods
         end
+
+        it "is not defined on instances of the class" do
+          refute_respond_to @x, :abstract_instance_methods
+        end
       end
     end
 
-    describe "A class that fully implements the abstract methods" do
+    describe "A class that fully implements the interface" do
       before do
         @class = FullImpl
         @x = FullImpl.new
@@ -256,12 +254,20 @@ module TypeToolkit
         it "returns false for non-abstract methods" do
           refute @class.abstract_method?(:inspect)
         end
+
+        it "is not defined on instances of the class" do
+          refute_respond_to @x, :abstract_method?
+        end
       end
 
       describe ".abstract_method_declared?" do
         it "returns true for all abstract methods" do
           assert @class.abstract_method_declared?(:m1)
           assert @class.abstract_method_declared?(:m2)
+        end
+
+        it "is not defined on instances of the class" do
+          refute_respond_to @x, :abstract_method_declared?
         end
       end
 
@@ -270,10 +276,18 @@ module TypeToolkit
           # ... even through they're both implemented
           assert_equal [:m1, :m2], @class.abstract_instance_methods
         end
+
+        it "is not defined on instances of the class" do
+          refute_respond_to @x, :abstract_instance_methods
+        end
+
+        it "is not defined on instances of the class" do
+          refute_respond_to @x, :abstract_instance_methods
+        end
       end
     end
 
-    describe "A class that that fully implements the abstract methods, some via inheritance" do
+    describe "A class that partially inherits its implementation" do
       before do
         @class = PartiallyInheritsItsImpl
         @x = PartiallyInheritsItsImpl.new
@@ -282,8 +296,8 @@ module TypeToolkit
       describe "calling an abstract method with an inherited implementation" do
         it "calls the inherited implementation" do
           assert_respond_to @x, :m1
-          assert_equal "PartialParent#m1", @x.m1
-          assert_equal "PartialParent#m1", @x.method(:m1).call
+          assert_equal "PartialParentModule#m1", @x.m1
+          assert_equal "PartialParentModule#m1", @x.method(:m1).call
           refute_predicate @x.method(:m1), :abstract?
           refute_predicate @x.method(:m1).unbind, :abstract?
         end

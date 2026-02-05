@@ -25,21 +25,11 @@ module TypeToolkit
     # TODO: change semantics to only return methods that are actually abstract and unimplemented.
     # : (include_super = true) -> Array[Symbol]
     def abstract_instance_methods(include_super = true)
-      result = @__abstract_methods
+      result = @__abstract_methods || Set.new
 
-      # FIXME: this allocates way more than it needs to.
-      if include_super && defined?(super) && (super_abstract_methods = super)
-        result.merge(super_abstract_methods)
-      end
-
-      abstract_methods_in_interfaces = included_modules.flat_map do |m|
-        m.is_a?(HasAbstractMethods) ? m.abstract_instance_methods : []
-      end
-
-      if abstract_methods_in_interfaces.any?
-        return abstract_methods_in_interfaces if result.nil?
-
-        result.merge(abstract_methods_in_interfaces)
+      ancestors.each do |m|
+        methods = m.instance_variable_get(:@__abstract_methods)
+        result.merge(methods) if methods
       end
 
       result.to_a
@@ -60,9 +50,14 @@ module TypeToolkit
     #
     # : (method_name : Symbol) -> Bool
     def abstract_method_declared?(method_name)
-      @__abstract_methods&.include?(method_name) ||
-        included_modules.any? { |m| m.is_a?(HasAbstractMethods) && m.abstract_method_declared?(method_name) } ||
-        (defined?(super) && super)
+      # FIXME: Allocating the `ancestors` array is not great.
+      # I tried a recursive approach, but that didn't quite work.
+      # There is only one implementation of `abstract_method_declared?` in the ancestor chain, so there is no `super` to call.
+      # This method always checked the ivar of the current class, which might not be set. What we actually want is to
+      # walk up the ancestor chain, and check the ivar of each ancestor.
+      ancestors.any? do |m|
+        m.instance_variable_get(:@__abstract_methods)&.include?(method_name)
+      end
     end
 
     # Returns true if the given method is abstract, and has not been implemented.
