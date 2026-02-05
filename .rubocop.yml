@@ -14,5 +14,8 @@ Naming/FileName:
     # This file matches RuboCop naming conventions, like `rubocop-rails`, `rubocop-sorbet`, etc.
     - lib/rubocop-type_toolkit.rb
 
+Style/EmptyElse:
+  AllowComments: true
+
 Style/Semicolon:
   AllowAsExpressionSeparator: true
