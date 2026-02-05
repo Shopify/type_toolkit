@@ -11,3 +11,4 @@ gem "rake", "~> 13.0"
 gem "minitest", "~> 5.16"
 
 gem "rubocop", "~> 1.21"
+gem "rubocop-shopify", require: false
