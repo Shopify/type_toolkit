@@ -4,17 +4,20 @@
 module TypeToolkit
   # Raised when a call is made to an abstract method that never had a real implementation.
   class AbstractMethodNotImplementedError < Exception # rubocop:disable Lint/InheritException
-    def initialize(method_name:)
+    def initialize(method_name:, is_class_method:)
+      qualifier = is_class_method ? "class " : ""
+      prefix = is_class_method ? "." : "#"
       # Do not rely on this message content! Its content is subject to change.
-      super("Abstract method `##{method_name}` was never implemented.")
+      super("Abstract #{qualifier}method `#{prefix}#{method_name}` was never implemented.")
     end
   end
 
   # This module is included on a class whose instances can be receivers of calls to abstract methods.
   #
-  # Since abstract methods are removed at runtime (see `TypeToolkit::DSL#abstract`), attempting to call
-  # an unimplemented abstract method would usually raise a `NoMethodError`.
-  # This module uses `method_missing` to raise `AbstractMethodNotImplementedError` instead.
+  # This is just like `AbstractClassMethodReceiver`, but with a performance optimization to call `self.class`
+  # instead of `singleton_class`.
+  # In theory we could just always use implementation from `AbstractClassMethodReceiver`,
+  # but touching the `singleton_class` would allocate the singleton class for every object that hits the `#method_missing` code path.
   # @requires_ancestor: Kernel
   module AbstractInstanceMethodReceiver
     # This `#method_missing` is hit when calling a potentially abstract method on an instance
@@ -25,7 +28,7 @@ module TypeToolkit
       c = self.class #: as Class[top] & HasAbstractMethods
 
       if c.abstract_method_declared?(method_name)
-        raise AbstractMethodNotImplementedError.new(method_name:)
+        raise AbstractMethodNotImplementedError.new(method_name:, is_class_method: false)
       end
 
       super

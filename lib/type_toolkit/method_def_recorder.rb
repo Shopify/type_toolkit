@@ -42,6 +42,7 @@ module TypeToolkit
     # @override
     #: (Symbol) -> void
     def singleton_method_added(m)
+      # This hook gets called about itself, but we don't care about it https://bugs.ruby-lang.org/issues/12131
       return super if m == :singleton_method_added
 
       is_singleton_method = true
