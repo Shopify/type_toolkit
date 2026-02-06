@@ -1,0 +1,7 @@
+inherit_from: ../.rubocop.yml
+
+Naming/ClassAndModuleCamelCase:
+  Enabled: false # Sometimes underscores are useful, m'kay?
+
+Style/ClassMethodsDefinitions:
+  Enabled: false # We need to be able to compare `class << self` and `def self.`
