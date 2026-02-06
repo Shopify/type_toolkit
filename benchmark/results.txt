@@ -1,0 +1,15 @@
+## Interpretter
+
+| Call to...        |        Regular impl |          Inherited impl |              Missing impl |
+|-------------------|--------------------:|------------------------:|--------------------------:|
+| sorbet-runtime    | (same-ish) 23.02 ns | (2.70x slower) 57.30 ns | (1.13x  slower) 472.86 ns |
+| manual delegation | (same-ish) 22.18 ns | (2.07x slower) 44.90 ns |               *415.36 ns* |
+| abstract gem      | (same-ish) 22.56 ns |              *22.03 ns* | (2.11x  slower) 890.38 ns |
+
+## YJIT
+
+| Call to...        |        Regular impl |           Inherited impl |              Missing impl |
+|-------------------|--------------------:|-------------------------:|--------------------------:|
+| sorbet-runtime    |  (same-ish) 1.63 ns | (21.41x slower) 34.91 ns | (1.10x  slower) 447.59 ns |
+| manual delegation |  (same-ish) 1.63 ns |  (7.15x slower) 11.66 ns |               *405.84 ns* |
+| abstract gem      |  (same-ish) 1.67 ns |                *1.63 ns* | (1.91x  slower) 774.91 ns |
