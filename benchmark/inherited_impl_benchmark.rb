@@ -194,3 +194,5 @@ manual_delegation_child_instance = ManualDelegationDemo::Child.new
     x.compare!
   end
 end
+
+# TODO: benchmark startup performance

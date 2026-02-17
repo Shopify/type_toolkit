@@ -4,6 +4,7 @@ require_relative "type_toolkit/version"
 require_relative "type_toolkit/dsl"
 require_relative "type_toolkit/method_def_recorder"
 require_relative "type_toolkit/interface"
+require_relative "type_toolkit/abstract_class"
 
 # Raised when a call is made to an abstract method that never had a real implementation.
 AbstractMethodNotImplementedError = Class.new(Exception) # rubocop:disable Lint/InheritException

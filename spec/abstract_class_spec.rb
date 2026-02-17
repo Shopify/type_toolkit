@@ -10,7 +10,9 @@ module TypeToolkit
     class AbstractClass
       abstract!
 
-      abstract def m1; end
+      def m1; end
+      abstract(:m1)
+
       abstract def m2; end
 
       def concrete_method = "AbstractClass#concrete_method"
@@ -45,8 +47,7 @@ module TypeToolkit
 
     describe "An abstract class" do
       it "cannot be instantiated" do
-        skip "Not implemented yet"
-        assert_raises { AbstractClass.new }
+        assert_raises(CannotInstantiateAbstractClassError) { AbstractClass.new }
       end
 
       describe ".abstract_instance_methods" do
@@ -83,9 +84,20 @@ module TypeToolkit
         @class = NonImpl
       end
 
-      it "cannot be instantiated" do
-        skip "Not implemented yet"
-        assert_raises { NonImpl.new }
+      it "can be instantiated" do
+        # ...despite not implementing all the abstract methods. This matches sorbet runtime's behaviour.
+        #
+        # The Sorbet static typechecker ensures that when you subclass an abstract class, you must either:
+        # 1. Implement all of its abstract methods.
+        # 2. Mark the subclass as abstract! as well.
+        #
+        # Attempting to call actually any of the abstract methods will still raise, like usual.
+        refute_nil @class.new
+      end
+
+      it "does not respond to .__original_new_impl" do
+        # binding.irb
+        assert_raises(NoMethodError) { @class.__original_new_impl }
       end
 
       # describe "a method with the same name as another interface's members" do
