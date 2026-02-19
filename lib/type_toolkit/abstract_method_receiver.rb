@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module TypeToolkit
@@ -14,19 +15,23 @@ module TypeToolkit
   # Since abstract methods are removed at runtime (see `TypeToolkit::DSL#abstract`), attempting to call
   # an unimplemented abstract method would usually raise a `NoMethodError`.
   # This module uses `method_missing` to raise `AbstractMethodNotImplementedError` instead.
+  # @requires_ancestor: Kernel
   module AbstractInstanceMethodReceiver
     # This `#method_missing` is hit when calling a potentially abstract method on an instance
     # E.g. TheClass.new.maybe_abstract_method
+    #
+    # (Symbol, ...) -> untyped
     def method_missing(method_name, ...)
-      if self.class.abstract_method_declared?(method_name)
+      c = self.class #: as Class[top] & HasAbstractMethods
+
+      if c.abstract_method_declared?(method_name)
         raise AbstractMethodNotImplementedError.new(method_name:)
       end
-
-      raise "This doesn't make sense" if self.class.abstract_method?(method_name) # sanity check
 
       super
     end
 
+    #: (Symbol, ?bool) -> bool
     def respond_to_missing?(method_name, include_private = false)
       self.class.abstract_method_declared?(method_name) || super
     end

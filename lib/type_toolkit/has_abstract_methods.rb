@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 module TypeToolkit
@@ -9,18 +10,28 @@ module TypeToolkit
   # In case 2, the storage belongs two levels up, in the singleton class of Foo (`Foo::<Foo>`)
   module HasAbstractMethods
     # Private API, do not use directly. Only meant to be called from the `abstract` macro.
+    #: (Symbol) -> void
     def __register_abstract_method(method_name) # :nodoc:
-      (@__abstract_methods ||= Set.new) << method_name
+      (
+        @__abstract_methods ||= Set.new #: Set[Symbol]?
+      ) << method_name
     end
 
     # Returns all methods that were marked abstract (even those which are implemented).
+    #: (?bool) -> Array[Symbol]
     def declared_abstract_instance_methods(include_super = true)
+      #: self as HasAbstractMethods & Module[top]
+
       result = @__abstract_methods
 
       return result.to_a unless include_super
 
       if defined?(super) && (super_abstract_methods = super)
-        result.merge(super_abstract_methods)
+        if result
+          result.merge(super_abstract_methods)
+        else
+          result = super_abstract_methods
+        end
       end
 
       abstract_methods_in_interfaces = included_modules.flat_map do |m|
@@ -39,7 +50,10 @@ module TypeToolkit
     end
 
     # Returns all methods that are abstract and have not been implemented.
+    #: (?bool) -> Array[Symbol]
     def abstract_instance_methods(include_super = true)
+      #: self as HasAbstractMethods & Module[top]
+
       declared_abstract_instance_methods(include_super).reject do |m|
         method_defined?(m) || private_method_defined?(m)
       end
@@ -58,7 +72,10 @@ module TypeToolkit
     #       Foo.class_method # Might raise AbstractMethodNotImplementedError
     #     end
     #
+    #: (Symbol) -> bool
     def abstract_method_declared?(method_name)
+      #: self as Module[top]
+
       @__abstract_methods&.include?(method_name) ||
         included_modules.any? { |m| m.is_a?(HasAbstractMethods) && m.abstract_method_declared?(method_name) } ||
         (defined?(super) && super)
@@ -78,7 +95,10 @@ module TypeToolkit
     #       Foo.class_method # Will raise AbstractMethodNotImplementedError
     #     end
     #
+    #: (Symbol) -> bool
     def abstract_method?(method_name)
+      #: self as (HasAbstractMethods & Module[top])
+
       # If the method is defined, it has a concrete implementation, so it's not abstract.
       return false if method_defined?(method_name) || private_method_defined?(method_name)
 

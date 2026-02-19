@@ -1,12 +1,18 @@
+# typed: strict
 # frozen_string_literal: true
 
 module TypeToolkit
+  # @requires_ancestor: MethodDefRecorder
   module DSL
     # Mark `method_name` as abstract.
     #
     # A real implementation of the method must be provided somewhere in the ancestor chain.
     # Calls to an unimplemented abstract method will raise `AbstractMethodNotImplementedError`.
+    #
+    #: (Symbol) -> Symbol
     def abstract(method_name)
+      #: self as (Module[top] & HasAbstractMethods & MethodDefRecorder)
+
       recorded_method_name, is_singleton_method = __last_method_def
 
       if recorded_method_name != method_name
@@ -31,7 +37,7 @@ module TypeToolkit
       #     # is_singleton_method = true, owner is `Foo.singleton_class`
       #     abstract def self.foo; end
       #   end
-      method_owner = is_singleton_method ? singleton_class : self
+      method_owner = is_singleton_method ? singleton_class : self #: as Module[top] & HasAbstractMethods
 
       # Register the fact that this method is meant to be abstract,
       # used by APIs like `abstract_method_declared?` and `Method#abstract?`

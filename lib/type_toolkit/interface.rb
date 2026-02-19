@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 require_relative "dsl"
@@ -7,24 +8,23 @@ require_relative "abstract_method_receiver"
 
 module TypeToolkit
   class << self
+    #: (Module[top]) -> void
     def make_interface!(mod)
-      case mod
-      when Class
+      if Class === mod
         raise TypeError, "Classes can't be interfaces. Did you mean to make it `abstract` instead?"
-      when Module
-        mod.extend(TypeToolkit::Interface)
-        mod.extend(TypeToolkit::DSL)
-        mod.extend(TypeToolkit::MethodDefRecorder)
-        mod.extend(TypeToolkit::HasAbstractMethods)
-      else
-        raise TypeError, "Only modules can be interfaces, got #{mod.class}."
       end
+
+      mod.extend(TypeToolkit::Interface)
+      mod.extend(TypeToolkit::DSL)
+      mod.extend(TypeToolkit::MethodDefRecorder)
+      mod.extend(TypeToolkit::HasAbstractMethods)
     end
   end
 
   # This module is extended onto any module that represents an interface.
   # All of its members should be public and abstract.
   module Interface
+    #: (Module[top]) -> void
     def included(target_module)
       # Including/extending a module is idempotent, so we don't have to worry these were already included/extended.
 
