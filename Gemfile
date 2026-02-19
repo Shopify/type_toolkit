@@ -8,6 +8,8 @@ gemspec
 gem "irb"
 gem "rake", "~> 13.0"
 
+gem "sorbet"
+gem "tapioca", ">= 0.17", require: false
 gem "minitest", "~> 5.16"
 
 gem "rubocop", "~> 1.21"
