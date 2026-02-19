@@ -3,6 +3,4 @@
 require_relative "type_toolkit/version"
 
 module TypeToolkit
-  class Error < StandardError; end
-  # Your code goes here...
 end
