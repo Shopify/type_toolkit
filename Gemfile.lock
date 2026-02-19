@@ -81,6 +81,7 @@ GEM
       sorbet-static (= 0.6.12945)
     sorbet-runtime (0.6.12945)
     sorbet-static (0.6.12945-universal-darwin)
+    sorbet-static (0.6.12945-x86_64-linux)
     sorbet-static-and-runtime (0.6.12945)
       sorbet (= 0.6.12945)
       sorbet-runtime (= 0.6.12945)
@@ -117,6 +118,7 @@ GEM
 PLATFORMS
   arm64-darwin-23
   arm64-darwin-24
+  x86_64-linux
 
 DEPENDENCIES
   irb
@@ -154,11 +156,11 @@ CHECKSUMS
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.3.1) sha256=8c9e89d09f66a26a01264e7e3480ec0607f0c497a861ef16063604b1b08eb19c
   rbi (0.3.9) sha256=d6a187bd0b376e999d3d82a5e5798a61178be98b894b7b35741c14162c9ea015
-  rbs (4.0.0.dev.5)
+  rbs (4.0.0.dev.5) sha256=273938e5a9c7f06b041be583588f2aa1976149bda2ce213e33e129c51534e174
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
   regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
-  require-hooks (0.2.2)
+  require-hooks (0.2.2) sha256=effa81b61a669ca00cb1e8910411e0d6a8bb16b49a53d9e69b5e6372d6c90f31
   rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
   rubocop (1.84.2) sha256=5692cea54168f3dc8cb79a6fe95c5424b7ea893c707ad7a4307b0585e88dbf5f
   rubocop-ast (1.49.0) sha256=49c3676d3123a0923d333e20c6c2dbaaae2d2287b475273fddee0c61da9f71fd
@@ -169,10 +171,11 @@ CHECKSUMS
   sorbet (0.6.12945) sha256=40fd8c121f7e9ded24462daf757707dc588889646daed478a47b7359d2969d84
   sorbet-runtime (0.6.12945) sha256=3ddd992650437557fb87deb13c94d7250aeeab326812e7a863dfd4955f0758f3
   sorbet-static (0.6.12945-universal-darwin) sha256=766038d71e0ab7f8a60eb298b742d4e5fb9bd364034c651443f825fb4d61f11e
+  sorbet-static (0.6.12945-x86_64-linux) sha256=c393afe666e41d51afa111b6913b572aee6032f3a77546ea5fb1b690906fcc25
   sorbet-static-and-runtime (0.6.12945) sha256=6a0ae4ac59ddc874e9438ff6e0f23b4eb78569c6d412ced4e043f3a6db6b44d0
-  spoom (1.7.11)
+  spoom (1.7.11) sha256=4e27384af6d3fde5aadc0287c51e6f76c0802259cbb3b6a67603bf718352f4cf
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
-  tapioca (0.17.10)
+  tapioca (0.17.10) sha256=880a682ca8314f798dd09e9f104134fbf1a713c13be51f7dd4741dd434e6471b
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
   type_toolkit (0.0.2)
