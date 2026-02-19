@@ -14,6 +14,13 @@ desc "alias for typecheck"; task tc: :typecheck
 desc "alias for typecheck"; task srb: :typecheck
 desc "alias for typecheck"; task sorbet: :typecheck
 
+desc "Type-check the code base with Sorbet using Prism"
+task :typecheck_prism do
+  sh "bundle exec srb tc --parser=prism" do |ok, _res|
+    abort unless ok
+  end
+end
+
 require "minitest/test_task"
 
 Minitest::TestTask.create do |t|
