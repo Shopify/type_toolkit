@@ -81,9 +81,9 @@ module TypeToolkit
         refute_nil @class.new
       end
 
-      it "does not respond to .__original_new_impl" do
-        refute_respond_to @class, :__original_new_impl
-        assert_raises(NoMethodError) { @class.__original_new_impl }
+      it "does not respond to .__original_allocate_impl" do
+        refute_respond_to @class, :__original_allocate_impl
+        assert_raises(NoMethodError) { @class.__original_allocate_impl }
       end
 
       describe ".abstract_method?" do
