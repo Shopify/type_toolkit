@@ -1,0 +1,4 @@
+TypeToolkit/DontExpectUnexpectedNil:
+  Description: "Detects misuse of UnexpectedNilError (rescuing, raising, or asserting it)."
+  Enabled: true
+  VersionAdded: "0.1.0"

@@ -9,5 +9,10 @@ AllCops:
   TargetRubyVersion: 3.2
   NewCops: enable
 
+Naming/FileName:
+  Exclude:
+    # This file matches RuboCop naming conventions, like `rubocop-rails`, `rubocop-sorbet`, etc.
+    - lib/rubocop-type_toolkit.rb
+
 Style/Semicolon:
   AllowAsExpressionSeparator: true
