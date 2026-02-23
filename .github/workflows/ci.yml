@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    name: CI checks
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1.288.0
+        with:
+          bundler-cache: true
+          rubygems: 4.0.4
+      - name: Run type check
+        run: bundle exec rake typecheck
+      - name: Run type check with Prism parser
+        run: bundle exec rake typecheck_prism
+        continue-on-error: true
+      - name: Run tests
+        run: bundle exec rake test
+        continue-on-error: true
+      - name: Lint Ruby files
+        run: bundle exec rake rubocop
+      - name: Verify gem RBIs are up-to-date
+        run: bin/tapioca gem --verify
+      - name: Verify duplicates in shims
+        run: bin/tapioca check-shims
