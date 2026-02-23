@@ -1,6 +1,9 @@
 inherit_gem:
   rubocop-shopify: rubocop.yml
 
+plugins:
+  - rubocop-minitest
+
 AllCops:
   TargetRubyVersion: 3.2
   NewCops: enable
