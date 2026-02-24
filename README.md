@@ -1,35 +1,126 @@
 # TypeToolkit
 
-TODO: Delete this and the text below, and describe your gem
+[💎 RubyGems](https://rubygems.org/gems/type_toolkit)
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/type_toolkit`. To experiment with that code, run `bin/console` for an interactive prompt.
+A minimal runtime library for implementing abstract classes, interfaces, and more.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+Install Type Toolkit into your bundle, add it to your `Gemfile`:
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```rb
+gem "type_toolkit"
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+And then run `bundle install`.
 
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+### RuboCop Cops
+
+This gem ships with RuboCop cops that we recommend you enable for your application. You can do so by adding it to the `plugins` list of your `rubocop.yml`:
+
+```yml
+plugins:
+  - rubocop-other-extension
+  - rubocop-type_toolkit
 ```
 
-## Usage
+### Cherry-picking features
 
-TODO: Write usage instructions here
+Simply writing `gem "type_toolkit"` in your `Gemfile` will grab all the tools from the toolkit, which we highly recommend. This adds methods to Ruby's core classes, to make them feel like a native part of the language.
+
+Alternatively, you can cherry-pick only the tools you need. For example, if you only want to use the `not_nil!` assertion, you can add the following to your `Gemfile`:
+
+```rb
+gem "type_toolkit", require: ["type_toolkit/ext/nil_assertions"]
+```
+
+or you can skip the require in the `Gemfile`, and later manually require it in a specific file:
+
+```ruby
+gem "type_toolkit", require: false
+```
+
+```ruby
+# your_script.rb
+require "type_toolkit/ext/nil_assertions"
+```
+
+
+## Tools
+
+### `not_nil!` assertion
+
+When debugging a `nil`-related error, it can be difficult to trace back where the `nil` actually originated from. It could have come in from a parameter, whose argument was read from an instance variable, on an object loaded from a cache, populated by some totally different request.
+
+If a value can't be nil, it's best for that to be clearly asserted as close to where that nilable value was first generated. That way, a rogue `nil` isn't allowed to propagate arbitrarily far away in downstream code.
+
+Type Toolkit provides a `not_nil!` assertion, which will raise an `UnexpectedNilError` if the receiver is `nil`.
+
+```rb
+# `__dir__` can be nil in an "eval", but never in a Ruby file.
+gemfile = Pathname.new(__dir__.not_nil!) / "Gemfile"
+```
+
+`not_nil!` method calls can be chained, to fail early if any value in the chain is `nil`:
+
+```rb
+last_delivery = user.not_nil!
+  .orders.last.not_nil!
+  .deliveries.last.not_nil!
+```
+
+## Guiding Principles
+
+### Blazingly fast™
+
+All tools should aim to have 0 overhead at runtime, as compared to hand-written Ruby.
+
+### Pay only for what you use
+
+There should be no performance cost for a tool that you're not using.
+
+Wherever there's an unavoidable cost, it should only ever apply to code that actually uses the tool. **No global costs.**
+
+Tools should be optimized for the common case, even if that slows them in rare cases. For example, calling an abstract method is as fast as calling any other method, but only if it's implemented. Calling an unimplemented method call hits the `#method_missing` path, which is significantly slower. This is an acceptable trade-off, because no production code should be calling `#method_missing`, anyway.
+
+In all cases, performance costs are quantified and well-documented.
+
+### Feels like Ruby
+
+Tools should feel like part of a programming language itself, and less like its standard library. Type Toolkit takes on the implementation complexity so your code doesn't have to.
+
+To keep that bar high, the toolkit is lean and deliberately focused on
+language-level primitives. Where practical, new
+features should be built in separate libraries that _use_ the Type Toolkit.
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+This repo has Rake tasks configured for common development tasks:
+1. `bundle exec rake` to do the next 3 steps all together
+1. `bundle exec rake rubocop` for linting
+1. `bundle exec rake typecheck` to typecheck with Sorbet
+1. `bundle exec rake test` to run all the tests
+1. `bundle exec rake -T` to list all the tasks
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+### Releasing
 
-## Contributing
+This gem is automatically released to [RubyGems.org](https://rubygems.org/gems/type_toolkit) via [Trusted Publishing](https://guides.rubygems.org/trusted-publishing/). To publish a new version of the gem, all you have to do is:
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/type_toolkit.
+1. Update the version number in [`version.rb`](https://github.com/Shopify/type_toolkit/blob/main/lib/type_toolkit/version.rb)
+    * This can either be part of an existing PR, or a new standalone PR.
+
+2. Once that PR is merged, create a tag at the new head of the `main` branch:
+
+    ```sh
+    git pull origin main && git checkout main && git tag v1.2.3
+    ```
+
+3. Push the new tag.
+
+    ```sh
+    git push origin v1.2.3
+    ```
+
+    This will automatically trigger our [release workflow](https://github.com/Shopify/type_toolkit/actions/workflows/release.yml). It must be approved by a member of the Ruby and Rails Infrastructure team at Shopify before it will run.
+
+Once approved, the workflow will automatically publish the new gem version to RubyGems.org, and create a new [GitHub release](https://github.com/Shopify/type_toolkit/releases).
