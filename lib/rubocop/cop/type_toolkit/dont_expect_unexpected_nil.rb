@@ -11,7 +11,7 @@ module RuboCop
         #: (RuboCop::AST::SendNode) -> void
         def on_send(node)
           case node.method_name
-          # when :raise then check_raise(node)
+          when :raise then check_raise(node)
           when :assert_raises then check_assert_raises(node)
           end
         end

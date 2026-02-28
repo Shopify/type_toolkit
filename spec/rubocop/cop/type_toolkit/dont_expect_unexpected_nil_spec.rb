@@ -31,7 +31,7 @@ module RuboCop
             RUBY
           end
 
-          it "adds offense when assert_raises is used with do...end block" do
+          it "adds offense when assert_raises is used with UnexpectedNilError with a do ... end block" do
             assert_offense(<<~RUBY)
               assert_raises(UnexpectedNilError) do
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
@@ -40,14 +40,38 @@ module RuboCop
             RUBY
           end
 
-          it "adds offense when UnexpectedNilError is among other arguments" do
+          it "adds offense when assert_raises is used with ::UnexpectedNilError with a do ... end block" do
+            assert_offense(<<~RUBY)
+              assert_raises(::UnexpectedNilError) do
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
+                foo
+              end
+            RUBY
+          end
+
+          it "adds offense when assert_raises is passed UnexpectedNilError among other arguments" do
             assert_offense(<<~RUBY)
               assert_raises(ArgumentError, UnexpectedNilError) { foo }
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
             RUBY
+
+            assert_offense(<<~RUBY)
+              assert_raises(UnexpectedNilError, ArgumentError) { foo }
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
+            RUBY
+
+            assert_offense(<<~RUBY)
+              assert_raises(::UnexpectedNilError, ArgumentError) { foo }
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
+            RUBY
+
+            assert_offense(<<~RUBY)
+              assert_raises(ArgumentError, ::UnexpectedNilError) { foo }
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
+            RUBY
           end
 
-          it "does not add offense when assert_raises uses a different error" do
+          it "does not add offense when assert_raises is used with a different error" do
             assert_no_offenses(<<~RUBY)
               assert_raises(ArgumentError) { foo }
             RUBY
@@ -88,6 +112,17 @@ module RuboCop
             RUBY
           end
 
+          it "adds offense when rescuing ::UnexpectedNilError among other exceptions" do
+            assert_offense(<<~RUBY)
+              begin
+                foo
+              rescue ::UnexpectedNilError, ArgumentError
+                     ^^^^^^^^^^^^^^^^^^^^ #{rescue_message}
+                bar
+              end
+            RUBY
+          end
+
           it "does not add offense when rescuing other exceptions" do
             assert_no_offenses(<<~RUBY)
               begin
@@ -103,28 +138,56 @@ module RuboCop
           it "adds offense when raising UnexpectedNilError" do
             assert_offense(<<~RUBY)
               raise UnexpectedNilError
-                    ^^^^^^^^^^^^^^^^^^ #{general_usage_message}
+              ^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
             RUBY
           end
 
           it "adds offense when raising UnexpectedNilError with a message" do
             assert_offense(<<~RUBY)
               raise UnexpectedNilError, "message"
-                    ^^^^^^^^^^^^^^^^^^ #{general_usage_message}
-            RUBY
-          end
-
-          it "adds offense when raising UnexpectedNilError.new" do
-            assert_offense(<<~RUBY)
-              raise UnexpectedNilError.new
-                    ^^^^^^^^^^^^^^^^^^ #{general_usage_message}
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
             RUBY
           end
 
           it "adds offense when raising ::UnexpectedNilError" do
             assert_offense(<<~RUBY)
               raise ::UnexpectedNilError
-                    ^^^^^^^^^^^^^^^^^^^^ #{general_usage_message}
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
+            RUBY
+          end
+
+          it "adds offense when raising ::UnexpectedNilError with a message" do
+            assert_offense(<<~RUBY)
+              raise ::UnexpectedNilError, "message"
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
+            RUBY
+          end
+
+          it "adds offense when raising UnexpectedNilError.new" do
+            assert_offense(<<~RUBY)
+              raise UnexpectedNilError.new
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
+            RUBY
+          end
+
+          it "adds offense when raising UnexpectedNilError.new with a message" do
+            assert_offense(<<~RUBY)
+              raise UnexpectedNilError.new, "message"
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
+            RUBY
+          end
+
+          it "adds offense when raising ::UnexpectedNilError.new" do
+            assert_offense(<<~RUBY)
+              raise ::UnexpectedNilError.new
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
+            RUBY
+          end
+
+          it "adds offense when raising ::UnexpectedNilError.new with a message" do
+            assert_offense(<<~RUBY)
+              raise ::UnexpectedNilError.new, "message"
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
             RUBY
           end
 
@@ -170,6 +233,10 @@ module RuboCop
           "TypeToolkit/DontExpectUnexpectedNil: It is always a mistake for `not_nil!` to be called on nil, " \
             "so you should never try to rescue `UnexpectedNilError` specifically. " \
             "Change your code to gracefully handle `nil` instead."
+        end
+
+        def raise_message
+          "TypeToolkit/DontExpectUnexpectedNil: `UnexpectedNilError` should only ever be raised by `NilClass#not_nil!`."
         end
 
         def general_usage_message
