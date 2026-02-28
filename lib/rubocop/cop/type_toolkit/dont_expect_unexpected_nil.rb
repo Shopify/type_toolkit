@@ -1,12 +1,19 @@
 # typed: true
 # frozen_string_literal: true
 
+require "type_toolkit/ext/nil_assertions"
+
 module RuboCop
   module Cop
     module TypeToolkit
       # This cop detects attempts to raise, rescue, or otherwise use the `UnexpectedNilError` class.
       class DontExpectUnexpectedNil < Base
         RESTRICT_ON_SEND = [:assert_raises, :raise].freeze
+
+        UNEXPECTED_NIL_ERROR_NAME = ::TypeToolkit::UnexpectedNilError.name.not_nil!
+          .split("::").last.not_nil!
+          .to_sym #: Symbol
+        private_constant :UNEXPECTED_NIL_ERROR_NAME
 
         #: (RuboCop::AST::SendNode) -> void
         def on_send(node)
@@ -55,7 +62,12 @@ module RuboCop
 
         #: (RuboCop::AST::ConstNode) -> bool
         def unexpected_nil_error?(node)
-          node.short_name == :UnexpectedNilError && (node.namespace.nil? || node.namespace.cbase_type?)
+          return false unless node.short_name == UNEXPECTED_NIL_ERROR_NAME
+
+          ns = node.namespace
+          return true if ns.nil? || ns.cbase_type?
+
+          ns.const_type? && ns.short_name == :TypeToolkit && (ns.namespace.nil? || ns.namespace.cbase_type?)
         end
 
         # Check for `raise UnexpectedNilError`
