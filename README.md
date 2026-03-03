@@ -21,7 +21,8 @@ This gem ships with RuboCop cops that we recommend you enable for your applicati
 ```yml
 plugins:
   - rubocop-other-extension
-  - rubocop-type_toolkit
+  - type_toolkit:
+      require_path: rubocop-type_toolkit
 ```
 
 ### Cherry-picking features
