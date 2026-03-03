@@ -2,6 +2,8 @@ PATH
   remote: .
   specs:
     type_toolkit (0.0.3)
+      lint_roller
+      rubocop (>= 1.72.0)
 
 GEM
   remote: https://rubygems.org/
@@ -124,7 +126,6 @@ DEPENDENCIES
   irb
   minitest (~> 5.16)
   rake (~> 13.0)
-  rubocop (~> 1.21)
   rubocop-minitest
   rubocop-rake
   rubocop-shopify
