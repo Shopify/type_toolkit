@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "lint_roller"
+require "type_toolkit/version"
 
 module RuboCop
   module Cop
