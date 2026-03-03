@@ -18,17 +18,19 @@ class NilClass
   # @override
   #: -> bot
   def not_nil!
-    raise UnexpectedNilError
+    raise TypeToolkit::UnexpectedNilError
   end
 end
 
-# An error raised when calling `#not_nil!` on a `nil` value.
-#
-# `UnexpectedNilError` should never occur in well-formed code, so it should never be rescued.
-# This is why it inherits from `Exception` instead of `StandardError`,
-# so that bare rescues clauses (like `rescue => e`) don't rescue it.
-class UnexpectedNilError < Exception # rubocop:disable Lint/InheritException
-  def initialize(message = "Called `not_nil!` on nil.")
-    super(message)
+module TypeToolkit
+  # An error raised when calling `#not_nil!` on a `nil` value.
+  #
+  # `UnexpectedNilError` should never occur in well-formed code, so it should never be rescued.
+  # This is why it inherits from `Exception` instead of `StandardError`,
+  # so that bare rescues clauses (like `rescue => e`) don't rescue it.
+  class UnexpectedNilError < Exception # rubocop:disable Lint/InheritException
+    def initialize(message = "Called `not_nil!` on nil.")
+      super
+    end
   end
 end

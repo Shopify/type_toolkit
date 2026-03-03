@@ -9,66 +9,53 @@ require "rubocop-type_toolkit"
 module RuboCop
   module Cop
     module TypeToolkit
-      describe DontExpectUnexpectedNil do
+      class DontExpectUnexpectedNilSpec < ::Minitest::Spec
+        CONSTANT_NAMES = [
+          "UnexpectedNilError",
+          "::UnexpectedNilError",
+          "TypeToolkit::UnexpectedNilError",
+          "::TypeToolkit::UnexpectedNilError",
+        ].freeze
+
         include RuboCop::Minitest::AssertOffense
 
         before do
           @cop = DontExpectUnexpectedNil.new
         end
 
-        describe "assert_raises with UnexpectedNilError" do
-          it "adds offense when assert_raises is used with UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              assert_raises(UnexpectedNilError) { foo }
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-            RUBY
-          end
+        describe "assert_raises" do
+          CONSTANT_NAMES.each do |constant_name|
+            arrows_______ = "^" * constant_name.size
 
-          it "adds offense when assert_raises is used with ::UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              assert_raises(::UnexpectedNilError) { foo }
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-            RUBY
-          end
-
-          it "adds offense when assert_raises is used with UnexpectedNilError with a do ... end block" do
-            assert_offense(<<~RUBY)
-              assert_raises(UnexpectedNilError) do
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-                foo
+            describe constant_name do
+              it "adds offense with a { } block" do
+                assert_offense(<<~RUBY)
+                  assert_raises(#{constant_name}) { foo }
+                  ^^^^^^^^^^^^^^#{arrows_______}^ #{assert_raises_message}
+                RUBY
               end
-            RUBY
-          end
 
-          it "adds offense when assert_raises is used with ::UnexpectedNilError with a do ... end block" do
-            assert_offense(<<~RUBY)
-              assert_raises(::UnexpectedNilError) do
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-                foo
+              it "adds offense with a do ... end block" do
+                assert_offense(<<~RUBY)
+                  assert_raises(#{constant_name}) do
+                  ^^^^^^^^^^^^^^#{arrows_______}^ #{assert_raises_message}
+                    foo
+                  end
+                RUBY
               end
-            RUBY
-          end
 
-          it "adds offense when assert_raises is passed UnexpectedNilError among other arguments" do
-            assert_offense(<<~RUBY)
-              assert_raises(ArgumentError, UnexpectedNilError) { foo }
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-            RUBY
+              it "adds offense when passed among other arguments" do
+                assert_offense(<<~RUBY)
+                  assert_raises(ArgumentError, #{constant_name}) { foo }
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#{arrows_______}^ #{assert_raises_message}
+                RUBY
 
-            assert_offense(<<~RUBY)
-              assert_raises(UnexpectedNilError, ArgumentError) { foo }
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-            RUBY
-
-            assert_offense(<<~RUBY)
-              assert_raises(::UnexpectedNilError, ArgumentError) { foo }
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-            RUBY
-
-            assert_offense(<<~RUBY)
-              assert_raises(ArgumentError, ::UnexpectedNilError) { foo }
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{assert_raises_message}
-            RUBY
+                assert_offense(<<~RUBY)
+                  assert_raises(#{constant_name}, ArgumentError) { foo }
+                  ^^^^^^^^^^^^^^#{arrows_______}^^^^^^^^^^^^^^^^ #{assert_raises_message}
+                RUBY
+              end
+            end
           end
 
           it "does not add offense when assert_raises is used with a different error" do
@@ -78,49 +65,33 @@ module RuboCop
           end
         end
 
-        describe "rescuing UnexpectedNilError" do
-          it "adds offense when rescuing UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              begin
-                foo
-              rescue UnexpectedNilError
-                     ^^^^^^^^^^^^^^^^^^ #{rescue_message}
-                bar
-              end
-            RUBY
-          end
+        describe "rescue" do
+          CONSTANT_NAMES.each do |constant_name|
+            arrows_______ = "^" * constant_name.size
 
-          it "adds offense when rescuing ::UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              begin
-                foo
-              rescue ::UnexpectedNilError
-                     ^^^^^^^^^^^^^^^^^^^^ #{rescue_message}
-                bar
+            describe constant_name do
+              it "adds offense" do
+                assert_offense(<<~RUBY)
+                  begin
+                    foo
+                  rescue #{constant_name}
+                         #{arrows_______} #{rescue_message}
+                    bar
+                  end
+                RUBY
               end
-            RUBY
-          end
 
-          it "adds offense when rescuing UnexpectedNilError among other exceptions" do
-            assert_offense(<<~RUBY)
-              begin
-                foo
-              rescue UnexpectedNilError, ArgumentError
-                     ^^^^^^^^^^^^^^^^^^ #{rescue_message}
-                bar
+              it "adds offense when among other exceptions" do
+                assert_offense(<<~RUBY)
+                  begin
+                    foo
+                  rescue #{constant_name}, ArgumentError
+                         #{arrows_______} #{rescue_message}
+                    bar
+                  end
+                RUBY
               end
-            RUBY
-          end
-
-          it "adds offense when rescuing ::UnexpectedNilError among other exceptions" do
-            assert_offense(<<~RUBY)
-              begin
-                foo
-              rescue ::UnexpectedNilError, ArgumentError
-                     ^^^^^^^^^^^^^^^^^^^^ #{rescue_message}
-                bar
-              end
-            RUBY
+            end
           end
 
           it "does not add offense when rescuing other exceptions" do
@@ -134,61 +105,39 @@ module RuboCop
           end
         end
 
-        describe "raising UnexpectedNilError" do
-          it "adds offense when raising UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              raise UnexpectedNilError
-              ^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
-          end
+        describe "raise" do
+          CONSTANT_NAMES.each do |constant_name|
+            arrows_______ = "^" * constant_name.size
 
-          it "adds offense when raising UnexpectedNilError with a message" do
-            assert_offense(<<~RUBY)
-              raise UnexpectedNilError, "message"
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
-          end
+            describe constant_name do
+              it "adds offense" do
+                assert_offense(<<~RUBY)
+                  raise #{constant_name}
+                  ^^^^^^#{arrows_______} #{raise_message}
+                RUBY
+              end
 
-          it "adds offense when raising ::UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              raise ::UnexpectedNilError
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
-          end
+              it "adds offense with a message" do
+                assert_offense(<<~RUBY)
+                  raise #{constant_name}, "message"
+                  ^^^^^^#{arrows_______}^^^^^^^^^^^ #{raise_message}
+                RUBY
+              end
 
-          it "adds offense when raising ::UnexpectedNilError with a message" do
-            assert_offense(<<~RUBY)
-              raise ::UnexpectedNilError, "message"
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
-          end
+              it "adds offense with .new" do
+                assert_offense(<<~RUBY)
+                  raise #{constant_name}.new
+                  ^^^^^^#{arrows_______}^^^^ #{raise_message}
+                RUBY
+              end
 
-          it "adds offense when raising UnexpectedNilError.new" do
-            assert_offense(<<~RUBY)
-              raise UnexpectedNilError.new
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
-          end
-
-          it "adds offense when raising UnexpectedNilError.new with a message" do
-            assert_offense(<<~RUBY)
-              raise UnexpectedNilError.new, "message"
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
-          end
-
-          it "adds offense when raising ::UnexpectedNilError.new" do
-            assert_offense(<<~RUBY)
-              raise ::UnexpectedNilError.new
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
-          end
-
-          it "adds offense when raising ::UnexpectedNilError.new with a message" do
-            assert_offense(<<~RUBY)
-              raise ::UnexpectedNilError.new, "message"
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{raise_message}
-            RUBY
+              it "adds offense with .new and a message" do
+                assert_offense(<<~RUBY)
+                  raise #{constant_name}.new, "message"
+                  ^^^^^^#{arrows_______}^^^^^^^^^^^^^^^ #{raise_message}
+                RUBY
+              end
+            end
           end
 
           it "does not add offense when raising other exceptions" do
@@ -199,18 +148,15 @@ module RuboCop
         end
 
         describe "other usages of UnexpectedNilError" do
-          it "adds offense when using UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              x = UnexpectedNilError
-                  ^^^^^^^^^^^^^^^^^^ #{general_usage_message}
-            RUBY
-          end
+          CONSTANT_NAMES.each do |constant_name|
+            arrows_______ = "^" * constant_name.size
 
-          it "adds offense when using ::UnexpectedNilError" do
-            assert_offense(<<~RUBY)
-              x = ::UnexpectedNilError
-                  ^^^^^^^^^^^^^^^^^^^^ #{general_usage_message}
-            RUBY
+            it "adds offense when using #{constant_name}" do
+              assert_offense(<<~RUBY)
+                x = #{constant_name}
+                    #{arrows_______} #{general_usage_message}
+              RUBY
+            end
           end
 
           it "does not add offense when using other constants" do

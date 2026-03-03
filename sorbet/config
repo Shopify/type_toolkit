@@ -4,3 +4,4 @@
 --ignore=vendor/
 --enable-experimental-rbs-comments
 --suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
+--disable-watchman
