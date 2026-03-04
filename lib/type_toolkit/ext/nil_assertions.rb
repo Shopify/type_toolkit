@@ -27,7 +27,9 @@ module TypeToolkit
   #
   # `UnexpectedNilError` should never occur in well-formed code, so it should never be rescued.
   # This is why it inherits from `Exception` instead of `StandardError`,
-  # so that bare rescues clauses (like `rescue => e`) don't rescue it.
+  # so that bare rescue clauses (like `rescue => e`) don't accidentally swallow it.
+  #
+  # Note: `rescue Exception` can still catch it, but that's intentionally harder to write accidentally.
   class UnexpectedNilError < Exception # rubocop:disable Lint/InheritException
     def initialize(message = "Called `not_nil!` on nil.")
       super
