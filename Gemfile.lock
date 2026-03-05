@@ -10,6 +10,7 @@ GEM
   specs:
     ast (2.4.3)
     benchmark (0.5.0)
+    benchmark-ips (2.14.0)
     date (3.5.1)
     erb (6.0.1)
     erubi (1.13.1)
@@ -123,6 +124,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  benchmark-ips
   irb
   minitest (~> 5.16)
   rake (~> 13.0)
@@ -130,12 +132,14 @@ DEPENDENCIES
   rubocop-rake
   rubocop-shopify
   sorbet
+  sorbet-runtime
   tapioca (>= 0.17)
   type_toolkit!
 
 CHECKSUMS
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
   benchmark (0.5.0) sha256=465df122341aedcb81a2a24b4d3bd19b6c67c1530713fd533f3ff034e419236c
+  benchmark-ips (2.14.0) sha256=b72bc8a65d525d5906f8cd94270dccf73452ee3257a32b89fbd6684d3e8a9b1d
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   erb (6.0.1) sha256=28ecdd99c5472aebd5674d6061e3c6b0a45c049578b071e5a52c2a7f13c197e5
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9

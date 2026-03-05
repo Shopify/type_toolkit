@@ -15,3 +15,8 @@ gem "minitest", "~> 5.16"
 gem "rubocop-shopify", require: false
 gem "rubocop-minitest", require: false
 gem "rubocop-rake", require: false
+
+group :benchmark do
+  gem "benchmark-ips"
+  gem "sorbet-runtime"
+end

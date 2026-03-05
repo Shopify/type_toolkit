@@ -3,5 +3,6 @@
 --ignore=tmp/
 --ignore=vendor/
 --enable-experimental-rbs-comments
+--enable-experimental-requires-ancestor
 --suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
---disable-watchman
+--suppress-error-code=5022

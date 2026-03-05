@@ -70,6 +70,49 @@ last_delivery = user.not_nil!
   .deliveries.last.not_nil!
 ```
 
+### Interfaces
+
+Interfaces are modules with abstract methods which a conforming class must implement. They help make duck-typing easier to use in Ruby, by validating that your conforming classes do actually provide the correct methods needed of them.
+
+The Type Toolkit provides runtime support for interfaces (marked with `interface!`) and abstract methods (marked with `abstract` before the `def` keyword).
+
+Example:
+
+```ruby
+module Notifier
+  interface!
+
+  #: (String) -> void
+  abstract def send_notification(message); end
+end
+
+class SlackNotifier
+  include Notifier
+
+  # @override
+  #: (String) -> void
+  def send_notification(message)
+    puts "Posting to Slack API: #{message.inspect}"
+  end
+end
+
+SlackNotifier.new.send_notification("Hello, world!") # ✅
+# => Posting to Slack API: "Hello, world!"
+```
+
+Unimplemented abstract methods cannot be called, and the Type Toolkit runtime will raise an error if you try to do so:
+
+```ruby
+class EmailNotifier
+  include Notifier
+  
+  # Oops, forgot to implement `#send_notification`!
+end
+
+EmailNotifier.new.send_notification("Hello, world!") # ❌ TypeToolkit::AbstractMethodNotImplementedError
+# => Abstract method #send_notification was never implemented.
+```
+
 ## Guiding Principles
 
 ### Blazingly fast™
