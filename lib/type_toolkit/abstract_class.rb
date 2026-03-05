@@ -7,8 +7,8 @@ module TypeToolkit
     def make_abstract!(mod)
       case mod
       when Class
-        # We need to save the original implementation of `new`, so we can restore it on the subclasses later.
-        mod.singleton_class.alias_method(:__original_new_impl, :new)
+        # We need to save the original implementation of `allocate`, so we can restore it on the subclasses later.
+        mod.singleton_class.alias_method(:__original_allocate_impl, :allocate)
 
         mod.extend(TypeToolkit::AbstractClass)
         mod.extend(TypeToolkit::DSL)
@@ -52,16 +52,16 @@ module TypeToolkit
   #   end
   #
   module AbstractClass
-    # An override of `new` which prevents instantiation of the class.
-    # This needs to be overridden again in subclasses, to restore the real `.new` implementation.
-    def new(...) # :nodoc:
+    # An override of `allocate` which prevents instantiation of the class.
+    # This needs to be overridden again in subclasses, to restore the real `.allocate` implementation.
+    def allocate # :nodoc:
       #: self as Class[top]
 
-      if respond_to?(:__original_new_impl) # This is true for the abstract classes themselves, and false for their subclasses.
+      if respond_to?(:__original_allocate_impl) # This is true for the abstract classes themselves, and false for their subclasses.
         raise CannotInstantiateAbstractClassError, "#{self.class.name} is declared as abstract; it cannot be instantiated"
       end
 
-      # This is hit in the uncommon case where a subclass of an abstract class overrides `.new` and calls `super`.
+      # This is hit in exceptionally uncommon case where a subclass of an abstract class overrides `.allocate`.
       super
     end
 
@@ -72,14 +72,14 @@ module TypeToolkit
 
       if superclass.include?(TypeToolkit::AbstractClass) &&
           !superclass.singleton_class.include?(TypeToolkit::AbstractClass)
-        # We only need to restore the original `.new` implementation for the direct subclasses of the abstract class.
+        # We only need to restore the original `.allocate` implementation for the direct subclasses of the abstract class.
         # That's then inherited by the indirect subclasses.
 
-        subclass.singleton_class.alias_method(:new, :__original_new_impl)
+        subclass.singleton_class.alias_method(:allocate, :__original_allocate_impl)
 
         # We don't need a reference to the original implementation anymore,
         # so let's undef it to limit namespace pollution.
-        subclass.singleton_class.undef_method(:__original_new_impl)
+        subclass.singleton_class.undef_method(:__original_allocate_impl)
       end
 
       super
