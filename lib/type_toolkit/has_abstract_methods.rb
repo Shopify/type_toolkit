@@ -22,27 +22,18 @@ module TypeToolkit
     def declared_abstract_instance_methods(include_super = true)
       #: self as HasAbstractMethods & Module[top]
 
-      result = @__abstract_methods
+      result = @__abstract_methods #: Set[Symbol]?
 
-      return result.to_a unless include_super
-
-      if defined?(super) && (super_abstract_methods = super)
-        if result
-          result.merge(super_abstract_methods)
-        else
-          result = super_abstract_methods
-        end
-      end
-
-      abstract_methods_in_interfaces = included_modules.flat_map do |m|
-        m.is_a?(HasAbstractMethods) ? m.declared_abstract_instance_methods : []
-      end
-
-      if abstract_methods_in_interfaces.any?
-        if result&.any?
-          result.merge(abstract_methods_in_interfaces)
-        else
-          result = abstract_methods_in_interfaces
+      if include_super
+        ancestors.each do |m|
+          methods = m.instance_variable_get(:@__abstract_methods)
+          if methods&.any?
+            if result
+              result.merge(methods)
+            else
+              result = methods
+            end
+          end
         end
       end
 
@@ -76,9 +67,14 @@ module TypeToolkit
     def abstract_method_declared?(method_name)
       #: self as Module[top]
 
-      @__abstract_methods&.include?(method_name) ||
-        included_modules.any? { |m| m.is_a?(HasAbstractMethods) && m.abstract_method_declared?(method_name) } ||
-        (defined?(super) && super)
+      # FIXME: Allocating the `ancestors` array is not great.
+      # I tried a recursive approach, but that didn't quite work.
+      # There is only one implementation of `abstract_method_declared?` in the ancestor chain, so there is no `super` to call.
+      # This method always checked the ivar of the current class, which might not be set. What we actually want is to
+      # walk up the ancestor chain, and check the ivar of each ancestor.
+      ancestors.any? do |m|
+        m.instance_variable_get(:@__abstract_methods)&.include?(method_name)
+      end
     end
 
     # Returns true if the given method is abstract, and has not been implemented.
