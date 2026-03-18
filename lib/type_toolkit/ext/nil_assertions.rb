@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require "bundler"
+
 # Asserts that the receiver is not nil.
 #
 # You should use `not_nil!` in places where you're absolutely sure a `nil` value can't occur.
@@ -20,6 +22,44 @@ class NilClass
   def not_nil!
     # Do not rely on this message content! Its content is subject to change.
     raise TypeToolkit::UnexpectedNilError, "Called `not_nil!` on nil."
+  end
+end
+
+# FIXME: this is load-order dependent, and will break if it's loaded after the real
+#        `T::Private::Types::Void::VOID` module, which is frozen:
+#        https://github.com/sorbet/sorbet/blob/f0cb505/gems/sorbet-runtime/lib/types/private/types/void.rb#L17-L19
+if Bundler.locked_gems.specs.any? { |s| s.name == "sorbet-runtime" }
+  module T
+    module Types
+      class Base; end
+    end
+
+    module Private
+      module Types
+        class Void < T::Types::Base
+          module VOID
+            class << self
+              # An override of `not_nil!` intended to reduce the discrepancy between test and production environments
+              # when Sorbet Runtime is used in tests but not production.
+              #
+              # When Sorbet Runtime is active `void`-returning methods have their return value replaced with the
+              # `T::Private::Types::Void::VOID` module. If Sorbet Runtime is on in tests but not production,
+              # this introduces a dangerous difference in behaviour for methods that return `nil`:
+              #
+              # * In test code, it'll be replaced with `T::Private::Types::Void::VOID`.
+              #   If `not_nil!` is called on it (and this override didn't exist), it'll just return `self`.
+              #
+              # * In production code, that `nil` value will left-as-is, and calling `not_nil!` on it will raise an error.
+              #: -> bot
+              def not_nil!
+                # Do not rely on this message content! Its content is subject to change.
+                raise TypeToolkit::UnexpectedNilError, "Called `not_nil!` on a void value (T::Private::Types::Void::VOID)"
+              end
+            end
+          end
+        end
+      end
+    end
   end
 end
 
