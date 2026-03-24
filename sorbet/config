@@ -6,3 +6,4 @@
 --enable-experimental-requires-ancestor
 --suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
 --suppress-error-code=5022
+--parser=prism
