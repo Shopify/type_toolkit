@@ -341,6 +341,42 @@ module TypeToolkit
       end
     end
 
+    describe "abstract!" do
+      it "makes a class abstract" do
+        klass = Class.new do
+          abstract!
+
+          abstract def my_method = assert_never_called!
+        end
+
+        assert klass.abstract_method?(:my_method)
+      end
+
+      it "delegates to an existing abstract! if one is defined" do
+        called = false
+
+        # Simulate another gem (e.g. Rails) defining abstract! on Object,
+        # which is Module's superclass. Module#abstract! should call super to reach it.
+        Object.define_method(:abstract!) { called = true }
+
+        klass = Class.new
+        klass.abstract!
+
+        assert called, "expected the other abstract! to have been called via super"
+        assert_respond_to klass, :abstract_instance_methods
+      ensure
+        Object.remove_method(:abstract!)
+      end
+
+      it "works when no parent abstract! exists" do
+        klass = Class.new do
+          abstract!
+        end
+
+        assert_respond_to klass, :abstract_instance_methods
+      end
+    end
+
     describe "A class that fully implements the interface, partially via inheritance" do
       before do
         @class = PartiallyInheritsItsImpl
