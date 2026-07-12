@@ -113,6 +113,30 @@ EmailNotifier.new.send_notification("Hello, world!") # ❌ TypeToolkit::Abstract
 # => Abstract method #send_notification was never implemented.
 ```
 
+### Private constants
+
+Unlike methods, constants don't respect `private`/`public` regions, so making one private normally means repeating its name in a separate `private_constant` call:
+
+```ruby
+class Configuration
+  DEFAULT_TIMEOUT = 30
+  private_constant :DEFAULT_TIMEOUT
+end
+```
+
+Type Toolkit's `private_constants` marks every constant defined within its block as private, so you don't have to repeat yourself:
+
+```ruby
+class Configuration
+  private_constants do
+    DEFAULT_TIMEOUT = 30
+  end
+end
+
+Configuration::DEFAULT_TIMEOUT # ❌ NameError
+# => private constant Configuration::DEFAULT_TIMEOUT referenced
+```
+
 ## Guiding Principles
 
 ### Blazingly fast™
