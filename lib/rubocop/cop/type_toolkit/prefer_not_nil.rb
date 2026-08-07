@@ -18,11 +18,12 @@ module RuboCop
         def on_send(node)
           return unless (argument = extract_t_must_argument(node))
 
-          replacement = replacement_for(argument)
-          correction = correction_for(node, argument, replacement)
           if nested_t_must?(node)
             add_offense(node, message: MSG)
           else
+            replacement = replacement_for(argument)
+            correction = correction_for(node, argument, replacement)
+
             add_offense(node, message: MSG) do |corrector|
               corrector.replace(node, correction)
             end
