@@ -151,6 +151,44 @@ module RuboCop
           RUBY
         end
 
+        it "autocorrects multiline calls with whitespace before the method" do
+          assert_offense(<<~RUBY)
+            first = T .must(
+                    ^^^^^^^^ #{MSG}
+              foo,
+            )
+            second = T
+                     ^ #{MSG}
+              .must(
+                bar,
+              )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            first = (
+              foo
+            ).not_nil!
+            second = (
+                bar
+              ).not_nil!
+          RUBY
+        end
+
+        it "removes a trailing comma before an inline comment" do
+          assert_offense(<<~RUBY)
+            value = T.must(
+                    ^^^^^^^ #{MSG}
+              foo, # Proven non-nil.
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = (
+              foo # Proven non-nil.
+            ).not_nil!
+          RUBY
+        end
+
         it "autocorrects nested T.must calls" do
           assert_offense(<<~RUBY)
             value = T.must(T.must(foo).bar)

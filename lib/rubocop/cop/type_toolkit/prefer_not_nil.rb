@@ -19,7 +19,7 @@ module RuboCop
           return unless (argument = t_must_argument(node))
 
           replacement = replacement_for(argument)
-          correction = correction_for(node, replacement)
+          correction = correction_for(node, argument, replacement)
           if nested_t_must?(node)
             add_offense(node, message: MSG)
           else
@@ -54,12 +54,14 @@ module RuboCop
           "#{source}.not_nil!"
         end
 
-        #: (RuboCop::AST::SendNode, String) -> String
-        def correction_for(node, replacement)
+        #: (RuboCop::AST::SendNode, RuboCop::AST::Node, String) -> String
+        def correction_for(node, argument, replacement)
           return replacement unless node.multiline?
 
-          grouped_source = node.source.sub(/\A(?:::)?T\.must/, "")
-          grouped_source = grouped_source.sub(/,(\s*\))\z/, '\1')
+          grouped_range = node.source_range.with(begin_pos: node.loc.begin.begin_pos, end_pos: node.loc.end.end_pos)
+          grouped_source = grouped_range.source
+          comma_offset = argument.source_range.end_pos - grouped_range.begin_pos
+          grouped_source.slice!(comma_offset) if grouped_source.getbyte(comma_offset) == 44
           "#{grouped_source}.not_nil!"
         end
 
