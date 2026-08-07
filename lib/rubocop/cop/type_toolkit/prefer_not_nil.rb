@@ -16,7 +16,7 @@ module RuboCop
 
         #: (RuboCop::AST::SendNode) -> void
         def on_send(node)
-          return unless (argument = t_must_argument(node))
+          return unless (argument = extract_t_must_argument(node))
 
           replacement = replacement_for(argument)
           correction = correction_for(node, argument, replacement)
@@ -32,7 +32,7 @@ module RuboCop
         private
 
         #: (RuboCop::AST::SendNode) -> RuboCop::AST::Node?
-        def t_must_argument(node)
+        def extract_t_must_argument(node)
           receiver = node.receiver
           return unless receiver.is_a?(RuboCop::AST::ConstNode)
           return unless receiver.short_name == :T && node.method?(:must) && node.arguments.one?
@@ -68,7 +68,7 @@ module RuboCop
         #: (RuboCop::AST::SendNode) -> bool
         def nested_t_must?(node)
           node.each_ancestor(:send).any? do |ancestor|
-            ancestor.is_a?(RuboCop::AST::SendNode) && t_must_argument(ancestor)
+            ancestor.is_a?(RuboCop::AST::SendNode) && extract_t_must_argument(ancestor)
           end
         end
 
