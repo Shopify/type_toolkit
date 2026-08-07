@@ -11,6 +11,9 @@ module RuboCop
         MSG = "Use `.not_nil!` instead of `T.must()`."
         RESTRICT_ON_SEND = [:must].freeze
 
+        COMMA_BYTE = ",".ord
+        private_constant :COMMA_BYTE
+
         KEYWORD_EXPRESSION_TYPES = [:defined?, :super, :yield, :zsuper].freeze
         private_constant :KEYWORD_EXPRESSION_TYPES
 
@@ -62,7 +65,7 @@ module RuboCop
           grouped_range = node.source_range.with(begin_pos: node.loc.begin.begin_pos, end_pos: node.loc.end.end_pos)
           grouped_source = grouped_range.source
           comma_offset = argument.source_range.end_pos - grouped_range.begin_pos
-          grouped_source.slice!(comma_offset) if grouped_source.getbyte(comma_offset) == 44
+          grouped_source.slice!(comma_offset) if grouped_source.getbyte(comma_offset) == COMMA_BYTE
           "#{grouped_source}.not_nil!"
         end
 
