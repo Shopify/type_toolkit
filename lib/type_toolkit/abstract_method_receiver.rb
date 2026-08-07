@@ -20,15 +20,28 @@ module TypeToolkit
     # This `#method_missing` is hit when calling a potentially abstract method on an instance
     # E.g. TheClass.new.maybe_abstract_method
     #
+    # We call `super` first, so that another `method_missing` further up the ancestor chain
+    # gets a chance to provide a dynamic implementation of the abstract method.
+    # Only if nothing handled the call do we translate the resulting `NoMethodError`
+    # into an `AbstractMethodNotImplementedError`.
+    #
     # (Symbol, ...) -> untyped
     def method_missing(method_name, ...)
+      super
+    rescue NoMethodError => e
+      # A `NoMethodError` for a *different* method was raised from within a dynamic
+      # implementation of this method. That's a real error, not an unimplemented abstract method.
+      raise unless e.name == method_name
+
       c = self.class #: as Class[top] & HasAbstractMethods
 
       if c.abstract_method_declared?(method_name)
-        raise AbstractMethodNotImplementedError.new(method_name:)
+        # `cause: nil` hides the unactionable "undefined method" error, which would
+        # otherwise be noise underneath the more precise error we raise here.
+        raise AbstractMethodNotImplementedError.new(method_name:), cause: nil
       end
 
-      super
+      raise
     end
 
     #: (Symbol, ?bool) -> bool

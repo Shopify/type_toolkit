@@ -52,6 +52,43 @@ module TypeToolkit
       def m2 = "PartiallyInheritsItsImpl#m2"
     end
 
+    # A class that provides a dynamic implementation of `m1` via `method_missing`, for `MethodMissingImpl`.
+    class MethodMissingParent
+      def method_missing(method_name, ...)
+        return super unless method_name == :m1
+
+        "MethodMissingParent#m1"
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        method_name == :m1 || super
+      end
+    end
+
+    # A class that implements `m1` dynamically, via the `method_missing` it inherits.
+    class MethodMissingImpl < MethodMissingParent
+      include SimpleInterface
+      # Does not provide an implementation for `m2`
+    end
+
+    # A class whose dynamic implementation of `m1` itself calls an undefined method.
+    class BrokenMethodMissingParent
+      def method_missing(method_name, ...)
+        return super unless method_name == :m1
+
+        Object.new.some_undefined_helper
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        method_name == :m1 || super
+      end
+    end
+
+    # A class whose inherited dynamic implementation of `m1` is broken.
+    class BrokenMethodMissingImpl < BrokenMethodMissingParent
+      include SimpleInterface
+    end
+
     describe "An interface" do
       describe ".abstract macro" do
         it "returns the method name" do
@@ -398,6 +435,37 @@ module TypeToolkit
           assert_equal [], @class.abstract_instance_methods
           assert_equal [], @class.abstract_instance_methods(true)
           assert_equal [], @class.abstract_instance_methods(false)
+        end
+      end
+    end
+
+    describe "A class that implements the interface via method_missing" do
+      before do
+        @x = MethodMissingImpl.new
+      end
+
+      describe "calling an abstract method implemented via method_missing" do
+        it "calls the dynamic implementation" do
+          assert_respond_to @x, :m1
+          assert_equal "MethodMissingParent#m1", @x.m1
+        end
+      end
+
+      describe "calling an unimplemented abstract method" do
+        it "raises AbstractMethodNotImplementedError, without a NoMethodError cause" do
+          e = assert_abstract { @x.m2 }
+
+          # The internal `NoMethodError` (from the call reaching `BasicObject#method_missing`)
+          # is unactionable noise, so it should not be exposed as the `cause`.
+          assert_nil e.cause
+        end
+      end
+
+      describe "calling an abstract method whose dynamic implementation is broken" do
+        it "propagates the NoMethodError raised inside the dynamic implementation" do
+          e = assert_raises(NoMethodError) { BrokenMethodMissingImpl.new.m1 }
+
+          assert_equal :some_undefined_helper, e.name
         end
       end
     end
