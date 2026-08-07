@@ -1,0 +1,90 @@
+# typed: true
+# frozen_string_literal: true
+
+module RuboCop
+  module Cop
+    module TypeToolkit
+      # Replaces Sorbet's `T.must(value)` assertion with Type Toolkit's `value.not_nil!` assertion.
+      class PreferNotNil < Base
+        extend AutoCorrector
+
+        MSG = "Use `.not_nil!` instead of `T.must()`."
+        RESTRICT_ON_SEND = [:must].freeze
+
+        KEYWORD_EXPRESSION_TYPES = [:defined?, :super, :yield, :zsuper].freeze
+        private_constant :KEYWORD_EXPRESSION_TYPES
+
+        #: (RuboCop::AST::SendNode) -> void
+        def on_send(node)
+          return unless (argument = t_must_argument(node))
+
+          replacement = replacement_for(argument)
+          correction = correction_for(node, replacement)
+          if nested_t_must?(node)
+            add_offense(node, message: MSG)
+          else
+            add_offense(node, message: MSG) do |corrector|
+              corrector.replace(node, correction)
+            end
+          end
+        end
+
+        private
+
+        #: (RuboCop::AST::SendNode) -> RuboCop::AST::Node?
+        def t_must_argument(node)
+          receiver = node.receiver
+          return unless receiver.is_a?(RuboCop::AST::ConstNode)
+          return unless receiver.short_name == :T && node.method?(:must) && node.arguments.one?
+
+          namespace = receiver.namespace
+          return unless namespace.nil? || namespace.cbase_type?
+
+          argument = node.first_argument
+          return unless argument
+          return if argument.splat_type? || argument.kwsplat_type?
+
+          argument
+        end
+
+        #: (RuboCop::AST::Node) -> String
+        def replacement_for(argument)
+          source = argument.source
+          source = "(#{source})" if requires_parentheses?(argument)
+          "#{source}.not_nil!"
+        end
+
+        #: (RuboCop::AST::SendNode, String) -> String
+        def correction_for(node, replacement)
+          return replacement unless node.multiline?
+
+          grouped_source = node.source.sub(/\A(?:::)?T\.must/, "")
+          grouped_source = grouped_source.sub(/,(\s*\))\z/, '\1')
+          "#{grouped_source}.not_nil!"
+        end
+
+        #: (RuboCop::AST::SendNode) -> bool
+        def nested_t_must?(node)
+          node.each_ancestor(:send).any? do |ancestor|
+            ancestor.is_a?(RuboCop::AST::SendNode) && t_must_argument(ancestor)
+          end
+        end
+
+        #: (RuboCop::AST::Node) -> bool
+        def requires_parentheses?(argument)
+          return false if argument.begin_type?
+
+          if argument.is_a?(RuboCop::AST::SendNode)
+            return true if argument.operator_method?
+            return true if argument.arguments? && !argument.parenthesized_call?
+          end
+          return true if argument.range_type? || argument.operator_keyword?
+          return true if argument.if_type? || argument.assignment?
+          return true if argument.any_block_type?
+
+          KEYWORD_EXPRESSION_TYPES.include?(argument.type)
+        end
+      end
+    end
+  end
+end
