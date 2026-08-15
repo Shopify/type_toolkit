@@ -41,6 +41,15 @@ module TypeToolkit
         Abstract singleton methods are not supported yet.
       MSG
 
+      if method_owner.abstract_method_declared?(method_name)
+        # Another implementation of this method exists up the ancestor chain, so merely removing the empty stub
+        # wouldn't be enough to reach the `method_missing` chain to raise `AbstractMethodNotImplementedError`.
+        #
+        # This is a trickier edge case, which we'll punt for now.
+        # https://github.com/sorbet/sorbet/issues/10418#issuecomment-5299851332
+        raise NotImplementedError, "Re-abstracting an abstract method that has already been implemented is not supported yet."
+      end
+
       # Register the fact that this method is meant to be abstract,
       # used by APIs like `abstract_method_declared?` and `Method#abstract?`
       method_owner.__register_abstract_method(method_name)

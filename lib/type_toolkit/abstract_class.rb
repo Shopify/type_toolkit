@@ -14,8 +14,13 @@ module TypeToolkit
         # We need to save the original implementation of `new`, so we can restore it on the subclasses later.
         mod.singleton_class.alias_method(:__type_toolkit_private_original_new_impl, :new)
 
+        mod.instance_variable_set(:@__type_toolkit_private_is_abstract, true)
+
         if TypeToolkit::AbstractClass > mod.singleton_class # Check if AbstractClass was already extended up in mod's ancestor chain.
-          raise NotImplementedError, "Declaring a subclass of an abstract class as abstract is not supported yet."
+          # We're re-abstracting a class that already has an abstract class in its ancestor chain.
+          # This new `abstract! call can't extend a duplicate module a second time,
+          # so we need to override the `new` implementation ourselves.
+          mod.singleton_class.define_method(:new, AbstractClass.instance_method(:new))
         end
 
         mod.extend(TypeToolkit::AbstractClass)
@@ -65,7 +70,7 @@ module TypeToolkit
     def new(...) # :nodoc:
       #: self as Class[top]
 
-      if respond_to?(:__type_toolkit_private_original_new_impl) # This is true for the abstract classes themselves, and false for their subclasses.
+      if instance_variable_get(:@__type_toolkit_private_is_abstract)
         raise CannotInstantiateAbstractClassError, "#{name} is declared as abstract; it cannot be instantiated"
       end
 

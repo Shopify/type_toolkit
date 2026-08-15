@@ -8,18 +8,18 @@ module TypeToolkit
     # ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐
     # ╎                            AbstractClass                            ╎
     # └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘
-    #         ↑               ↑               ↑
-    #         │               │               │
-    #         │               │               │
-    #    ┌╌╌╌╌╌╌╌╌╌┐   ┌╌╌╌╌╌╌╌╌╌╌╌╌╌┐   ╔════╧═════╗
-    #    ╎ NonImpl ╎   ╎ PartialImpl ╎   ║ FullImpl ║
-    #    └╌╌╌╌╌╌╌╌╌┘   └╌╌╌╌╌╌╌╌╌╌╌╌╌┘   ╚══════════╝
-    #                         ↑
-    #                         │
-    #                         │
-    #   ╔═════════════════════╧════╗
-    #   ║ PartiallyInheritsItsImpl ║
-    #   ╚══════════════════════════╝
+    #         ↑               ↑               ↑                 ↑
+    #         │               │               │                 │
+    #         │               │               │                 │
+    #    ┌╌╌╌╌╌╌╌╌╌┐   ┌╌╌╌╌╌╌╌╌╌╌╌╌╌┐   ╔════╧═════╗  ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐
+    #    ╎ NonImpl ╎   ╎ PartialImpl ╎   ║ FullImpl ║  ╎ AbstractSubclass ╎
+    #    └╌╌╌╌╌╌╌╌╌┘   └╌╌╌╌╌╌╌╌╌╌╌╌╌┘   ╚══════════╝  └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘
+    #                         ↑               ↑
+    #                         │               │
+    #                         │               │
+    #   ╔═════════════════════╧════╗ ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐
+    #   ║ PartiallyInheritsItsImpl ║ ╎ ReabstractedSubclass ╎
+    #   ╚══════════════════════════╝ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘
 
     class AbstractClass
       abstract!
@@ -50,6 +50,17 @@ module TypeToolkit
 
     class PartiallyInheritsItsImpl < PartialImpl
       def m2 = "PartiallyInheritsItsImpl#m2"
+    end
+
+    # Like `PartialImpl`, but is correctly marked as abstract.
+    class AbstractSubclass < AbstractClass
+      abstract!
+
+      abstract def m3; end
+    end
+
+    class ReabstractedSubclass < FullImpl
+      abstract!
     end
 
     describe "AbstractClass, an abstract class" do
@@ -104,11 +115,6 @@ module TypeToolkit
         #
         # Attempting to call actually any of the abstract methods will still raise, like usual.
         refute_nil @class.new
-      end
-
-      it "does not respond to .__type_toolkit_private_original_new_impl" do
-        refute_respond_to @class, :__type_toolkit_private_original_new_impl
-        assert_raises(NoMethodError) { @class.__type_toolkit_private_original_new_impl }
       end
 
       describe ".abstract_method?" do
@@ -378,13 +384,91 @@ module TypeToolkit
       end
     end
 
+    describe "AbstractSubclass, an abstract subclass of an abstract class" do
+      it "cannot be instantiated" do
+        e = assert_raises(CannotInstantiateAbstractClassError) { AbstractClass.new }
+
+        assert_equal "TypeToolkit::AbstractClassSpec::AbstractClass is declared as abstract; it cannot be instantiated", e.message
+      end
+
+      describe ".abstract_instance_methods" do
+        it "only contains the abstract methods" do
+          assert_equal [:m1, :m2], AbstractClass.abstract_instance_methods
+          assert_equal [:m1, :m2], AbstractClass.abstract_instance_methods(true)
+          assert_equal [:m1, :m2], AbstractClass.abstract_instance_methods(false)
+        end
+      end
+
+      describe ".abstract_method?" do
+        it "returns true for abstract methods" do
+          assert AbstractClass.abstract_method?(:m1)
+          assert AbstractClass.abstract_method?(:m2)
+        end
+
+        it "returns false for non-abstract methods" do
+          refute AbstractClass.abstract_method?(:concrete_method)
+        end
+      end
+
+      describe ".abstract_method_declared?" do
+        it "returns true for abstract methods" do
+          assert AbstractClass.abstract_method_declared?(:m1)
+          assert AbstractClass.abstract_method_declared?(:m2)
+        end
+
+        it "returns false for non-abstract methods" do
+          refute AbstractClass.abstract_method_declared?(:concrete_method)
+        end
+      end
+    end
+
+    describe "ReabstractedSubclass, an abstract subclass of a concrete class" do
+      it "cannot be instantiated" do
+        e = assert_raises(CannotInstantiateAbstractClassError) { ReabstractedSubclass.new }
+
+        assert_equal "TypeToolkit::AbstractClassSpec::ReabstractedSubclass is declared as abstract; it cannot be instantiated", e.message
+      end
+
+      describe ".abstract_instance_methods" do
+        it "only contains the abstract methods" do
+          assert_equal [], ReabstractedSubclass.abstract_instance_methods
+          assert_equal [], ReabstractedSubclass.abstract_instance_methods(true)
+          assert_equal [], ReabstractedSubclass.abstract_instance_methods(false)
+        end
+      end
+
+      describe ".abstract_method?" do
+        it "returns true for abstract methods" do
+          refute ReabstractedSubclass.abstract_method?(:m1)
+          refute ReabstractedSubclass.abstract_method?(:m2)
+        end
+
+        it "returns false for non-abstract methods" do
+          refute ReabstractedSubclass.abstract_method?(:concrete_method)
+        end
+      end
+
+      describe ".abstract_method_declared?" do
+        it "returns true for abstract methods" do
+          assert ReabstractedSubclass.abstract_method_declared?(:m1)
+          assert ReabstractedSubclass.abstract_method_declared?(:m2)
+        end
+
+        it "returns false for non-abstract methods" do
+          refute ReabstractedSubclass.abstract_method_declared?(:concrete_method)
+        end
+      end
+    end
+
     describe "Abstract subclasses of abstract parent classes" do
-      it "raises an error when attempting to mark the subclass as Abstract" do
+      it "raises an error when attempting to reabstract an implemented method" do
         test_case = self
 
         Class.new(FullImpl) do
+          abstract!
+
           test_case.assert_raises(NotImplementedError) do
-            abstract!
+            abstract def m1; end
           end
         end
       end
