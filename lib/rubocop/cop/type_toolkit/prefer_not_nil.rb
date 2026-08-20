@@ -90,7 +90,6 @@ module RuboCop
           end
           return true if argument.range_type? || argument.operator_keyword?
           return true if argument.if_type? || argument.assignment?
-          return true if argument.any_block_type?
 
           KEYWORD_EXPRESSION_TYPES.include?(argument.type)
         end

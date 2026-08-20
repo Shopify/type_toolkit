@@ -77,6 +77,8 @@ module RuboCop
                          ^^^^^^^^^^^^^^^^^ #{MSG}
             block_value = T.must(foo { bar })
                           ^^^^^^^^^^^^^^^^^^^ #{MSG}
+            block_with_arguments = T.must(foo(arg) { |value| value })
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{MSG}
             defined_value = T.must(defined?(foo))
                             ^^^^^^^^^^^^^^^^^^^^^ #{MSG}
             def example
@@ -98,7 +100,8 @@ module RuboCop
             logical = (foo || bar).not_nil!
             grouped = (foo || bar).not_nil!
             assignment = (foo = bar).not_nil!
-            block_value = (foo { bar }).not_nil!
+            block_value = foo { bar }.not_nil!
+            block_with_arguments = foo(arg) { |value| value }.not_nil!
             defined_value = (defined?(foo)).not_nil!
             def example
               (yield foo).not_nil!
