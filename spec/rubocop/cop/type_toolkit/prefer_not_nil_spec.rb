@@ -197,7 +197,7 @@ module RuboCop
           RUBY
         end
 
-        it "autocorrects multiline calls with whitespace before the method" do
+        it "drops unnecessary grouping from multiline calls without comments" do
           assert_offense(<<~RUBY)
             first = T .must(
                     ^^^^^^^^ #{MSG}
@@ -211,12 +211,21 @@ module RuboCop
           RUBY
 
           assert_correction(<<~RUBY)
-            first = (
-              foo
-            ).not_nil!
-            second = (
-                bar
-              ).not_nil!
+            first = foo.not_nil!
+            second = bar.not_nil!
+          RUBY
+        end
+
+        it "preserves a multiline call chain without parentheses" do
+          assert_offense(<<~RUBY)
+            variant = T.must(
+                      ^^^^^^^ #{MSG}
+              InventoryItemVariant.preload(:variant).where(inventory_item_id: @inventory_item_id).first!.variant
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            variant = InventoryItemVariant.preload(:variant).where(inventory_item_id: @inventory_item_id).first!.variant.not_nil!
           RUBY
         end
 
