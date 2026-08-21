@@ -401,5 +401,19 @@ module TypeToolkit
         end
       end
     end
+
+    describe "Abstract class methods" do
+      it "are not yet supported" do
+        test_context = self
+
+        Module.new do
+          interface!
+
+          test_context.assert_raises(NotImplementedError) do
+            abstract def self.abstract_class_method; end # rubocop:disable Style/ClassMethodsDefinitions
+          end
+        end
+      end
+    end
   end
 end
