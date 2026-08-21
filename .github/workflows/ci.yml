@@ -19,9 +19,6 @@ jobs:
           rubygems: 4.0.4
       - name: Run type check
         run: bundle exec rake typecheck
-      - name: Run type check with Prism parser
-        run: bundle exec rake typecheck_prism
-        continue-on-error: true
       - name: Run tests
         run: bundle exec rake test
       - name: Lint Ruby files
