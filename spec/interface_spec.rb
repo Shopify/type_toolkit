@@ -401,5 +401,264 @@ module TypeToolkit
         end
       end
     end
+
+    # A class that extends SimpleInterface, and implements some of its SimpleInterface's abstract methods via class methods.
+    class MetaPartialImpl
+      extend SimpleInterface
+
+      class << self
+        def m1 = "MetaPartialImpl#m1"
+        # Does not provide an implementation for `m2`
+      end
+    end
+
+    class MetaFullImpl
+      extend SimpleInterface
+
+      class << self
+        def m1 = "MetaFullImpl.m1"
+        def m2 = "MetaFullImpl.m2"
+      end
+    end
+
+    describe "MetaPartialImpl, A class whose singleton class partially implements the interface" do
+      describe "calling an implemented abstract method" do
+        it "calls the concrete implementation" do
+          assert_respond_to MetaPartialImpl, :m1
+          assert_equal "MetaPartialImpl#m1", MetaPartialImpl.m1
+          assert_equal "MetaPartialImpl#m1", MetaPartialImpl.method(:m1).call
+          refute_predicate MetaPartialImpl.method(:m1), :abstract?
+          refute_predicate MetaPartialImpl.method(:m1).unbind, :abstract?
+        end
+      end
+
+      describe "calling an unimplemented abstract method" do
+        it "raises AbstractMethodNotImplementedError" do
+          assert_respond_to MetaPartialImpl, :m2
+
+          # Notice it's not `NoMethodError`, so we can give a better error message.
+          e = assert_abstract { MetaPartialImpl.m2 }
+
+          # Do not rely on this message content! Its content is subject to change!
+          # We only test it to ensure it's formatted correctly.
+          assert_equal "Abstract class method `.m2` was never implemented.", e.message
+
+          m2 = MetaPartialImpl.method(:m2)
+          assert_kind_of Method, m2
+          assert_predicate m2, :abstract?
+          assert_predicate m2.unbind, :abstract?
+        end
+      end
+
+      it "doesn't leak the abstract class methods as instance methods" do
+        refute_respond_to MetaPartialImpl.new, :m1
+        refute_respond_to MetaPartialImpl.new, :m2
+      end
+
+      describe "calling a non-abstract method" do
+        it "calls the concrete implementation" do
+          assert_respond_to MetaPartialImpl, :inspect
+          assert_kind_of String, MetaPartialImpl.inspect
+          assert_kind_of String, MetaPartialImpl.method(:inspect).call
+          refute_predicate MetaPartialImpl.method(:inspect), :abstract?
+          refute_predicate MetaPartialImpl.method(:inspect).unbind, :abstract?
+        end
+      end
+
+      describe ".abstract_method?" do
+        it "returns false for abstract methods that have been implemented" do
+          refute MetaPartialImpl.singleton_class.abstract_method?(:m1)
+        end
+
+        it "returns true for abstract methods that have not been implemented" do
+          assert MetaPartialImpl.singleton_class.abstract_method?(:m2)
+        end
+
+        it "returns false for non-abstract methods" do
+          refute MetaPartialImpl.singleton_class.abstract_method?(:inspect)
+        end
+      end
+
+      describe ".abstract_method_declared?" do
+        it "is true for all abstract methods" do
+          assert MetaPartialImpl.singleton_class.abstract_method_declared?(:m1) # Even the one that's been implemented
+          assert MetaPartialImpl.singleton_class.abstract_method_declared?(:m2)
+        end
+
+        it "is false for non-abstract methods" do
+          assert MetaPartialImpl.singleton_class.public_method_defined?(:inspect) # precondition
+          refute MetaPartialImpl.singleton_class.abstract_method_declared?(:inspect)
+        end
+      end
+
+      describe ".declared_abstract_instance_methods" do
+        it "returns all declared abstract methods, even those that have been implemented" do
+          assert_equal [:m1, :m2], MetaPartialImpl.singleton_class.declared_abstract_instance_methods
+          assert_equal [:m1, :m2], MetaPartialImpl.singleton_class.declared_abstract_instance_methods(true)
+          assert_equal [], MetaPartialImpl.singleton_class.declared_abstract_instance_methods(false)
+        end
+      end
+
+      describe ".abstract_instance_methods" do
+        it "returns only unimplemented abstract methods" do
+          assert_equal [:m2], MetaPartialImpl.singleton_class.abstract_instance_methods
+          assert_equal [:m2], MetaPartialImpl.singleton_class.abstract_instance_methods(true)
+          assert_equal [], MetaPartialImpl.singleton_class.abstract_instance_methods(false)
+        end
+      end
+    end
+
+    describe "MetaFullImpl, A class whose singleton class fully implements the interface" do
+      describe "calling an implemented abstract method" do
+        it "calls the concrete implementation" do
+          assert_respond_to MetaFullImpl, :m1
+          assert_equal "MetaFullImpl.m1", MetaFullImpl.m1
+          assert_equal "MetaFullImpl.m1", MetaFullImpl.method(:m1).call
+          refute_predicate MetaFullImpl.method(:m1), :abstract?
+          refute_predicate MetaFullImpl.method(:m1).unbind, :abstract?
+
+          assert_respond_to MetaFullImpl, :m2
+          assert_equal "MetaFullImpl.m2", MetaFullImpl.m2
+          assert_equal "MetaFullImpl.m2", MetaFullImpl.method(:m2).call
+          refute_predicate MetaFullImpl.method(:m2), :abstract?
+          refute_predicate MetaFullImpl.method(:m2).unbind, :abstract?
+        end
+      end
+
+      it "doesn't leak the abstract class methods as instance methods" do
+        refute_respond_to MetaFullImpl.new, :m1
+        refute_respond_to MetaFullImpl.new, :m2
+      end
+
+      describe ".abstract_method?" do
+        it "returns false for abstract methods that have been implemented" do
+          refute MetaFullImpl.singleton_class.abstract_method?(:m1)
+          refute MetaFullImpl.singleton_class.abstract_method?(:m2)
+        end
+
+        it "returns false for non-abstract methods" do
+          refute MetaFullImpl.singleton_class.abstract_method?(:inspect)
+        end
+      end
+
+      describe ".abstract_method_declared?" do
+        it "returns true for all abstract methods" do
+          assert MetaFullImpl.singleton_class.abstract_method_declared?(:m1)
+          assert MetaFullImpl.singleton_class.abstract_method_declared?(:m2)
+        end
+      end
+
+      describe ".declared_abstract_instance_methods" do
+        it "returns all declared abstract methods, even those that have been implemented" do
+          assert_equal [:m1, :m2], MetaFullImpl.singleton_class.declared_abstract_instance_methods
+          assert_equal [:m1, :m2], MetaFullImpl.singleton_class.declared_abstract_instance_methods(true)
+          assert_equal [], MetaFullImpl.singleton_class.declared_abstract_instance_methods(false)
+        end
+      end
+
+      describe ".abstract_instance_methods" do
+        it "returns only unimplemented abstract methods" do
+          assert_equal [], MetaFullImpl.singleton_class.abstract_instance_methods
+          assert_equal [], MetaFullImpl.singleton_class.abstract_instance_methods(true)
+          assert_equal [], MetaFullImpl.singleton_class.abstract_instance_methods(false)
+        end
+      end
+    end
+
+    class MetaIncludesSimpleInterface
+      class << self
+        include SimpleInterface
+
+        def m1 = "MetaIncludesSimpleInterface#m1"
+        # Does not provide an implementation for `m2`
+      end
+    end
+
+    describe "MetaIncludesSimpleInterface, A class whose singleton class partially implements the interface" do
+      describe "calling an implemented abstract method" do
+        it "calls the concrete implementation" do
+          assert_respond_to MetaIncludesSimpleInterface, :m1
+          assert_equal "MetaIncludesSimpleInterface#m1", MetaIncludesSimpleInterface.m1
+          assert_equal "MetaIncludesSimpleInterface#m1", MetaIncludesSimpleInterface.method(:m1).call
+          refute_predicate MetaIncludesSimpleInterface.method(:m1), :abstract?
+          refute_predicate MetaIncludesSimpleInterface.method(:m1).unbind, :abstract?
+        end
+      end
+
+      describe "calling an unimplemented abstract method" do
+        it "raises AbstractMethodNotImplementedError" do
+          assert_respond_to MetaIncludesSimpleInterface, :m2
+
+          # Notice it's not `NoMethodError`, so we can give a better error message.
+          e = assert_abstract { MetaIncludesSimpleInterface.m2 }
+
+          # Do not rely on this message content! Its content is subject to change!
+          # We only test it to ensure it's formatted correctly.
+          assert_equal "Abstract class method `.m2` was never implemented.", e.message
+
+          m2 = MetaIncludesSimpleInterface.method(:m2)
+          assert_kind_of Method, m2
+          assert_predicate m2, :abstract?
+          assert_predicate m2.unbind, :abstract?
+        end
+      end
+
+      it "doesn't leak the abstract class methods as instance methods" do
+        refute_respond_to MetaIncludesSimpleInterface.new, :m1
+        refute_respond_to MetaIncludesSimpleInterface.new, :m2
+      end
+
+      describe "calling a non-abstract method" do
+        it "calls the concrete implementation" do
+          assert_respond_to MetaIncludesSimpleInterface, :inspect
+          assert_kind_of String, MetaIncludesSimpleInterface.inspect
+          assert_kind_of String, MetaIncludesSimpleInterface.method(:inspect).call
+          refute_predicate MetaIncludesSimpleInterface.method(:inspect), :abstract?
+          refute_predicate MetaIncludesSimpleInterface.method(:inspect).unbind, :abstract?
+        end
+      end
+
+      describe ".abstract_method?" do
+        it "returns false for abstract methods that have been implemented" do
+          refute MetaIncludesSimpleInterface.singleton_class.abstract_method?(:m1)
+        end
+
+        it "returns true for abstract methods that have not been implemented" do
+          assert MetaIncludesSimpleInterface.singleton_class.abstract_method?(:m2)
+        end
+
+        it "returns false for non-abstract methods" do
+          refute MetaIncludesSimpleInterface.singleton_class.abstract_method?(:inspect)
+        end
+      end
+
+      describe ".abstract_method_declared?" do
+        it "is true for all abstract methods" do
+          assert MetaIncludesSimpleInterface.singleton_class.abstract_method_declared?(:m1) # Even the one that's been implemented
+          assert MetaIncludesSimpleInterface.singleton_class.abstract_method_declared?(:m2)
+        end
+
+        it "is false for non-abstract methods" do
+          assert MetaIncludesSimpleInterface.singleton_class.public_method_defined?(:inspect) # precondition
+          refute MetaIncludesSimpleInterface.singleton_class.abstract_method_declared?(:inspect)
+        end
+      end
+
+      describe ".declared_abstract_instance_methods" do
+        it "returns all declared abstract methods, even those that have been implemented" do
+          assert_equal [:m1, :m2], MetaIncludesSimpleInterface.singleton_class.declared_abstract_instance_methods
+          assert_equal [:m1, :m2], MetaIncludesSimpleInterface.singleton_class.declared_abstract_instance_methods(true)
+          assert_equal [], MetaIncludesSimpleInterface.singleton_class.declared_abstract_instance_methods(false)
+        end
+      end
+
+      describe ".abstract_instance_methods" do
+        it "returns only unimplemented abstract methods" do
+          assert_equal [:m2], MetaIncludesSimpleInterface.singleton_class.abstract_instance_methods
+          assert_equal [:m2], MetaIncludesSimpleInterface.singleton_class.abstract_instance_methods(true)
+          assert_equal [], MetaIncludesSimpleInterface.singleton_class.abstract_instance_methods(false)
+        end
+      end
+    end
   end
 end
