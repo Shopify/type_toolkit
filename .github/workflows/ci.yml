@@ -24,7 +24,6 @@ jobs:
         continue-on-error: true
       - name: Run tests
         run: bundle exec rake test
-        continue-on-error: true
       - name: Lint Ruby files
         run: bundle exec rake rubocop
       - name: Verify gem RBIs are up-to-date
