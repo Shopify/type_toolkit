@@ -37,7 +37,9 @@ module TypeToolkit
       #     # is_singleton_method = true, owner is `Foo.singleton_class`
       #     abstract def self.foo; end
       #   end
-      method_owner = is_singleton_method ? singleton_class : self #: as Module[top] & HasAbstractMethods
+      method_owner = is_singleton_method ? raise(NotImplementedError, <<~MSG) : self
+        Abstract singleton methods are not supported yet.
+      MSG
 
       # Register the fact that this method is meant to be abstract,
       # used by APIs like `abstract_method_declared?` and `Method#abstract?`
