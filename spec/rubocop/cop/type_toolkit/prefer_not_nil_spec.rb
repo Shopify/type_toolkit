@@ -134,6 +134,23 @@ module RuboCop
           RUBY
         end
 
+        it "parenthesizes bracket method calls only when required" do
+          assert_offense(<<~RUBY)
+            bracketed = T.must(foo[bar]).foo
+                        ^^^^^^^^^^^^^^^^ #{MSG}
+            explicit = T.must(foo.[](bar)).foo
+                       ^^^^^^^^^^^^^^^^^^^ #{MSG}
+            command = T.must(foo.[] bar).foo
+                      ^^^^^^^^^^^^^^^^^^ #{MSG}
+          RUBY
+
+          assert_correction(<<~RUBY)
+            bracketed = foo[bar].not_nil!.foo
+            explicit = foo.[](bar).not_nil!.foo
+            command = (foo.[] bar).not_nil!.foo
+          RUBY
+        end
+
         it "preserves comments in multiline calls" do
           assert_offense(<<~RUBY)
             value = T.must(

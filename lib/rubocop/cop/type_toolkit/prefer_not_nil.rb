@@ -81,6 +81,7 @@ module RuboCop
           return false if argument.begin_type?
 
           if argument.is_a?(RuboCop::AST::SendNode)
+            return bracket_call_requires_parentheses?(argument) if argument.method?(:[])
             return true if argument.operator_method?
             return true if argument.arguments? && !argument.parenthesized_call?
           end
@@ -89,6 +90,12 @@ module RuboCop
           return true if argument.any_block_type?
 
           KEYWORD_EXPRESSION_TYPES.include?(argument.type)
+        end
+
+        # `foo[bar]` and `foo.[](bar)` can be chained directly, but command-style `foo.[] bar` cannot.
+        #: (RuboCop::AST::SendNode) -> bool
+        def bracket_call_requires_parentheses?(argument)
+          argument.dot? && !argument.parenthesized_call?
         end
       end
     end
