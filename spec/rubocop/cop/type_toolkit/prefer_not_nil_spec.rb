@@ -123,6 +123,19 @@ module RuboCop
           RUBY
         end
 
+        it "autocorrects multiline command calls" do
+          assert_offense(<<~RUBY)
+            T.must foo
+            ^^^^^^^^^^ #{MSG}
+              .bar
+          RUBY
+
+          assert_correction(<<~RUBY)
+            foo
+              .bar.not_nil!
+          RUBY
+        end
+
         it "does not add unnecessary parentheses to parenthesized calls" do
           assert_offense(<<~RUBY)
             value = T.must(fetch(value))
@@ -148,6 +161,19 @@ module RuboCop
             bracketed = foo[bar].not_nil!.foo
             explicit = foo.[](bar).not_nil!.foo
             command = (foo.[] bar).not_nil!.foo
+          RUBY
+        end
+
+        it "does not group an argument that makes the call multiline" do
+          assert_offense(<<~RUBY)
+            T.must(foo
+            ^^^^^^^^^^ #{MSG}
+              .bar)
+          RUBY
+
+          assert_correction(<<~RUBY)
+            foo
+              .bar.not_nil!
           RUBY
         end
 
