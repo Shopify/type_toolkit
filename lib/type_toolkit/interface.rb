@@ -19,6 +19,14 @@ module TypeToolkit
       mod.extend(TypeToolkit::MethodDefRecorder)
       mod.extend(TypeToolkit::HasAbstractMethods)
     end
+
+    #: (Class[top]) -> void
+    def make_abstract!(klass)
+      klass.extend(TypeToolkit::DSL)
+      klass.extend(TypeToolkit::MethodDefRecorder)
+      klass.extend(TypeToolkit::HasAbstractMethods)
+      klass.include(TypeToolkit::AbstractInstanceMethodReceiver)
+    end
   end
 
   # This module is extended onto any module that represents an interface.
