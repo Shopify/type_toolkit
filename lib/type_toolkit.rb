@@ -6,6 +6,7 @@ require_relative "type_toolkit/interface"
 require_relative "type_toolkit/ext/method"
 require_relative "type_toolkit/ext/module"
 require_relative "type_toolkit/ext/nil_assertions"
+require_relative "type_toolkit/ext/sorbet-runtime/nil_assertions"
 
 module TypeToolkit
 end

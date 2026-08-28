@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require "bundler"
+
 # Asserts that the receiver is not nil.
 #
 # You should use `not_nil!` in places where you're absolutely sure a `nil` value can't occur.
@@ -18,7 +20,8 @@ class NilClass
   # @override
   #: -> bot
   def not_nil!
-    raise TypeToolkit::UnexpectedNilError
+    # Do not rely on this message content! Its content is subject to change.
+    raise TypeToolkit::UnexpectedNilError, "Called `not_nil!` on nil."
   end
 end
 
@@ -31,8 +34,5 @@ module TypeToolkit
   #
   # Note: `rescue Exception` can still catch it, but that's intentionally harder to write accidentally.
   class UnexpectedNilError < Exception # rubocop:disable Lint/InheritException
-    def initialize(message = "Called `not_nil!` on nil.")
-      super
-    end
   end
 end
