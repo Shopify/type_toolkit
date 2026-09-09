@@ -77,6 +77,8 @@ module RuboCop
                          ^^^^^^^^^^^^^^^^^ #{MSG}
             block_value = T.must(foo { bar })
                           ^^^^^^^^^^^^^^^^^^^ #{MSG}
+            block_with_arguments = T.must(foo(arg) { |value| value })
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{MSG}
             defined_value = T.must(defined?(foo))
                             ^^^^^^^^^^^^^^^^^^^^^ #{MSG}
             def example
@@ -98,7 +100,8 @@ module RuboCop
             logical = (foo || bar).not_nil!
             grouped = (foo || bar).not_nil!
             assignment = (foo = bar).not_nil!
-            block_value = (foo { bar }).not_nil!
+            block_value = foo { bar }.not_nil!
+            block_with_arguments = foo(arg) { |value| value }.not_nil!
             defined_value = (defined?(foo)).not_nil!
             def example
               (yield foo).not_nil!
@@ -120,6 +123,19 @@ module RuboCop
 
           assert_correction(<<~RUBY)
             value = (fetch value).not_nil!
+          RUBY
+        end
+
+        it "autocorrects multiline command calls" do
+          assert_offense(<<~RUBY)
+            T.must foo
+            ^^^^^^^^^^ #{MSG}
+              .bar
+          RUBY
+
+          assert_correction(<<~RUBY)
+            foo
+              .bar.not_nil!
           RUBY
         end
 
@@ -148,6 +164,36 @@ module RuboCop
             bracketed = foo[bar].not_nil!.foo
             explicit = foo.[](bar).not_nil!.foo
             command = (foo.[] bar).not_nil!.foo
+          RUBY
+        end
+
+        it "does not group an argument that makes the call multiline" do
+          assert_offense(<<~RUBY)
+            T.must(foo
+            ^^^^^^^^^^ #{MSG}
+              .bar)
+          RUBY
+
+          assert_correction(<<~RUBY)
+            foo
+              .bar.not_nil!
+          RUBY
+        end
+
+        it "preserves parentheses around a multiline receiver" do
+          assert_offense(<<~RUBY)
+            T.must(
+            ^^^^^^^ #{MSG}
+              foo.
+                bar
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            (
+              foo.
+                bar
+            ).not_nil!
           RUBY
         end
 

@@ -54,13 +54,16 @@ module RuboCop
         #: (RuboCop::AST::Node) -> String
         def replacement_for(argument)
           source = argument.source
+
           source = "(#{source})" if requires_parentheses?(argument)
+
           "#{source}.not_nil!"
         end
 
         #: (RuboCop::AST::SendNode, RuboCop::AST::Node, String) -> String
         def correction_for(node, argument, replacement)
-          return replacement unless node.multiline?
+          return replacement unless node.multiline? && node.parenthesized_call?
+          return replacement if argument.first_line == node.loc.begin.line && argument.last_line == node.loc.end.line
 
           grouped_range = node.source_range.with(begin_pos: node.loc.begin.begin_pos, end_pos: node.loc.end.end_pos)
           grouped_source = grouped_range.source
@@ -87,7 +90,6 @@ module RuboCop
           end
           return true if argument.range_type? || argument.operator_keyword?
           return true if argument.if_type? || argument.assignment?
-          return true if argument.any_block_type?
 
           KEYWORD_EXPRESSION_TYPES.include?(argument.type)
         end
