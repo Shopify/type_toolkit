@@ -180,7 +180,7 @@ module RuboCop
           RUBY
         end
 
-        it "preserves parentheses around a multiline receiver" do
+        it "preserves a multiline receiver without parentheses" do
           assert_offense(<<~RUBY)
             T.must(
             ^^^^^^^ #{MSG}
@@ -190,10 +190,8 @@ module RuboCop
           RUBY
 
           assert_correction(<<~RUBY)
-            (
-              foo.
-                bar
-            ).not_nil!
+            foo.
+                bar.not_nil!
           RUBY
         end
 
@@ -214,7 +212,7 @@ module RuboCop
           RUBY
         end
 
-        it "autocorrects multiline calls with whitespace before the method" do
+        it "drops unnecessary grouping from multiline calls without comments" do
           assert_offense(<<~RUBY)
             first = T .must(
                     ^^^^^^^^ #{MSG}
@@ -228,12 +226,21 @@ module RuboCop
           RUBY
 
           assert_correction(<<~RUBY)
-            first = (
-              foo
-            ).not_nil!
-            second = (
-                bar
-              ).not_nil!
+            first = foo.not_nil!
+            second = bar.not_nil!
+          RUBY
+        end
+
+        it "preserves a multiline call chain without parentheses" do
+          assert_offense(<<~RUBY)
+            variant = T.must(
+                      ^^^^^^^ #{MSG}
+              InventoryItemVariant.preload(:variant).where(inventory_item_id: @inventory_item_id).first!.variant
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            variant = InventoryItemVariant.preload(:variant).where(inventory_item_id: @inventory_item_id).first!.variant.not_nil!
           RUBY
         end
 
@@ -249,6 +256,67 @@ module RuboCop
             value = (
               foo # Proven non-nil.
             ).not_nil!
+          RUBY
+        end
+
+        it "preserves grouping around heredocs in multiline calls" do
+          assert_offense(<<~RUBY)
+            value = T.must(
+                    ^^^^^^^ #{MSG}
+              <<~TEXT
+                hello
+              TEXT
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = (
+              <<~TEXT
+                hello
+              TEXT
+            ).not_nil!
+          RUBY
+        end
+
+        it "preserves grouping around nested heredocs in multiline calls" do
+          assert_offense(<<~RUBY)
+            value = T.must(
+                    ^^^^^^^ #{MSG}
+              foo(<<~TEXT)
+                hello
+              TEXT
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = (
+              foo(<<~TEXT)
+                hello
+              TEXT
+            ).not_nil!
+          RUBY
+        end
+
+        it "preserves grouping around a heredoc T.must nested in another call" do
+          assert_offense(<<~RUBY)
+            value = foo(
+              T.must(
+              ^^^^^^^ #{MSG}
+                <<~TEXT
+                  hello
+                TEXT
+              )
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = foo(
+              (
+                <<~TEXT
+                  hello
+                TEXT
+              ).not_nil!
+            )
           RUBY
         end
 
