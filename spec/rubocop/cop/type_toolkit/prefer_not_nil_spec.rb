@@ -180,6 +180,23 @@ module RuboCop
           RUBY
         end
 
+        it "preserves parentheses around a multiline receiver" do
+          assert_offense(<<~RUBY)
+            T.must(
+            ^^^^^^^ #{MSG}
+              foo.
+                bar
+            )
+          RUBY
+
+          assert_correction(<<~RUBY)
+            (
+              foo.
+                bar
+            ).not_nil!
+          RUBY
+        end
+
         it "preserves comments in multiline calls" do
           assert_offense(<<~RUBY)
             value = T.must(
