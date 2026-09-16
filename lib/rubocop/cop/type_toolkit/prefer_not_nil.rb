@@ -63,13 +63,33 @@ module RuboCop
         #: (RuboCop::AST::SendNode, RuboCop::AST::Node, String) -> String
         def correction_for(node, argument, replacement)
           return replacement unless node.multiline? && node.parenthesized_call?
-          return replacement if argument.first_line == node.loc.begin.line && argument.last_line == node.loc.end.line
+          return replacement unless comments_inside_parentheses?(node) || contains_heredoc?(argument)
 
           grouped_range = node.source_range.with(begin_pos: node.loc.begin.begin_pos, end_pos: node.loc.end.end_pos)
           grouped_source = grouped_range.source
           comma_offset = argument.source_range.end_pos - grouped_range.begin_pos
           grouped_source.slice!(comma_offset) if grouped_source.getbyte(comma_offset) == COMMA_BYTE
           "#{grouped_source}.not_nil!"
+        end
+
+        #: (RuboCop::AST::Node) -> bool
+        def contains_heredoc?(node)
+          return true if node.loc.is_a?(Parser::Source::Map::Heredoc)
+
+          node.each_descendant(:any_str).any? do |descendant|
+            descendant.loc.is_a?(Parser::Source::Map::Heredoc)
+          end
+        end
+
+        #: (RuboCop::AST::SendNode) -> bool
+        def comments_inside_parentheses?(node)
+          contents_begin = node.loc.begin.end_pos
+          contents_end = node.loc.end.begin_pos
+
+          processed_source.comments.any? do |comment|
+            comment_range = comment.loc.expression
+            contents_begin <= comment_range.begin_pos && comment_range.end_pos <= contents_end
+          end
         end
 
         #: (RuboCop::AST::SendNode) -> bool
