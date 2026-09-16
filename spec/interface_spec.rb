@@ -64,6 +64,38 @@ module TypeToolkit
           end
         end
 
+        it "raises when declaring an abstract singleton method" do
+          mod = Module.new
+
+          error = assert_raises(TypeError) do
+            mod.module_eval do
+              interface!
+
+              abstract def self.the_method_name = assert_never_called!
+            end
+          end
+
+          assert_match("Interfaces can't declare abstract singleton methods.", error.message)
+          refute_respond_to mod, :the_method_name
+        end
+
+        it "raises when declaring an abstract method on the interface singleton class" do
+          mod = Module.new
+
+          error = assert_raises(TypeError) do
+            mod.module_eval do
+              interface!
+
+              class << self
+                abstract def the_method_name = assert_never_called!
+              end
+            end
+          end
+
+          assert_match("Interfaces can't declare abstract singleton methods.", error.message)
+          refute_respond_to mod, :the_method_name
+        end
+
         it "raises when it sees a different method name than what MethodDefRecorder recorded" do
           error = assert_raises(RuntimeError) do
             Module.new do
