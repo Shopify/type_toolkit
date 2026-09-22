@@ -53,6 +53,36 @@ module TypeToolkit
     end
 
     describe "An interface" do
+      describe "interface!" do
+        it "raises when called on a class" do
+          error = assert_raises(TypeError) do
+            Class.new do
+              interface!
+            end
+          end
+
+          assert_equal "Classes can't be interfaces. Did you mean to make it `abstract` instead?", error.message
+        end
+
+        it "raises when called on a module's singleton class" do
+          error = assert_raises(TypeError) do
+            Module.new do
+              class << self
+                interface!
+              end
+            end
+          end
+
+          assert_equal "Classes can't be interfaces. Did you mean to make it `abstract` instead?", error.message
+        end
+
+        it "does not raise when called on a module" do
+          Module.new do
+            interface!
+          end
+        end
+      end
+
       describe ".abstract macro" do
         it "returns the method name" do
           test_context = self
