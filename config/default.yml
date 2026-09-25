@@ -4,6 +4,6 @@ TypeToolkit/DontExpectUnexpectedNil:
   VersionAdded: "0.1.0"
 
 TypeToolkit/PreferNotNil:
-  Description: "Replaces T.must assertions with Type Toolkit's not_nil! assertion."
+  Description: "Replaces T.must and T.must_because assertions with Type Toolkit's not_nil! assertion."
   Enabled: true
   VersionAdded: "0.1.0"
