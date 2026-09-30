@@ -70,6 +70,24 @@ last_delivery = user.not_nil!
   .deliveries.last.not_nil!
 ```
 
+The `TypeToolkit/PreferNotNil` RuboCop cop autocorrects `T.must` and `T.must_because` to `.not_nil!`.
+For `T.must_because`, the reason block's source is preserved as comments inside a parenthesized expression,
+so the correction also works in chained calls and nested expressions:
+
+```rb
+# Before
+value = T.must_because(foo) { "Proven non-nil by validation." }
+
+# After
+value = (
+  # Proven non-nil by validation.
+  foo.not_nil!
+)
+```
+
+The reason is documentation only after correction: it is no longer evaluated or included in the exception message.
+Calls with heredocs in the value or reason block are reported but not autocorrected, because heredoc bodies can extend beyond the block's source range.
+
 ### Interfaces
 
 Interfaces are modules with abstract methods which a conforming class must implement. They help make duck-typing easier to use in Ruby, by validating that your conforming classes do actually provide the correct methods needed of them.

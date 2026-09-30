@@ -12,7 +12,8 @@ module RuboCop
       class PreferNotNilSpec < ::Minitest::Spec
         include RuboCop::Minitest::AssertOffense
 
-        MSG = "TypeToolkit/PreferNotNil: Use `.not_nil!` instead of `T.must()`."
+        MSG = "TypeToolkit/PreferNotNil: #{format(PreferNotNil::MSG, method: :must)}"
+        BECAUSE_MSG = "TypeToolkit/PreferNotNil: #{format(PreferNotNil::MSG, method: :must_because)}"
 
         before do
           @cop = PreferNotNil.new
@@ -345,6 +346,104 @@ module RuboCop
           RUBY
         end
 
+        it "reports heredoc reasons without leaving orphaned heredoc bodies" do
+          assert_offense(<<~RUBY)
+            value = T.must_because(foo) { <<~REASON }
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{BECAUSE_MSG}
+              Proven non-nil.
+            REASON
+          RUBY
+
+          assert_no_corrections
+        end
+
+        it "preserves the reason without attaching the block to the corrected call" do
+          assert_offense(<<~RUBY)
+            value = T.must_because(foo) { "reason" }.bar
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{BECAUSE_MSG}
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = (
+              # reason
+              foo.not_nil!
+            ).bar
+          RUBY
+        end
+
+        it "preserves multiline reasons and argument comments" do
+          assert_offense(<<~RUBY)
+            value = ::T.must_because(
+                    ^^^^^^^^^^^^^^^^^ #{BECAUSE_MSG}
+              # Validated earlier.
+              foo,
+            ) do
+              # Explain the invariant.
+              "validated for \#{user}"
+            end
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = (
+              # # Explain the invariant.
+              # validated for \#{user}
+              # Validated earlier.
+              foo
+            ).not_nil!
+          RUBY
+        end
+
+        it "keeps trailing arguments and string interpolation outside the reason comment" do
+          assert_offense(<<~'RUBY', message: BECAUSE_MSG)
+            values = [T.must_because(foo) { 'reason' }, bar]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %{message}
+            text = "#{T.must_because(foo) { "reason" }}"
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %{message}
+          RUBY
+
+          assert_correction(<<~'RUBY')
+            values = [(
+              # reason
+              foo.not_nil!
+            ), bar]
+            text = "#{(
+              # reason
+              foo.not_nil!
+            )}"
+          RUBY
+        end
+
+        it "corrects mixed nested assertions without overlapping edits" do
+          assert_offense(<<~RUBY)
+            value = T.must(T.must_because(T.must(foo)) { "reason" })
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{MSG}
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{BECAUSE_MSG}
+                                          ^^^^^^^^^^^ #{MSG}
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = (
+              # reason
+              foo.not_nil!.not_nil!
+            ).not_nil!
+          RUBY
+        end
+
+        it "comments out assertions in the reason rather than correcting them" do
+          assert_offense(<<~RUBY)
+            value = T.must_because(foo) { T.must(bar) }
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{BECAUSE_MSG}
+                                          ^^^^^^^^^^^ #{MSG}
+          RUBY
+
+          assert_correction(<<~RUBY)
+            value = (
+              # T.must(bar)
+              foo.not_nil!
+            )
+          RUBY
+        end
+
         it "ignores other receivers, methods, and argument counts" do
           assert_no_offenses(<<~RUBY)
             Other::T.must(foo)
@@ -352,6 +451,11 @@ module RuboCop
             T.let(foo, String)
             T.must(foo, bar)
             T.must(*values)
+            Other::T.must_because(foo) { "reason" }
+            object.must_because(foo) { "reason" }
+            T.must_because(foo, bar) { "reason" }
+            T.must_because(*values) { "reason" }
+            T.must_because(foo, &reason)
           RUBY
         end
       end
