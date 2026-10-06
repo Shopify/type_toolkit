@@ -4,12 +4,12 @@
 module RuboCop
   module Cop
     module TypeToolkit
-      # Replaces Sorbet's `T.must(value)` assertion with Type Toolkit's `value.not_nil!` assertion.
+      # Replaces Sorbet's `T.must` and `T.must_because` assertions with `.not_nil!`.
       class PreferNotNil < Base
         extend AutoCorrector
 
-        MSG = "Use `.not_nil!` instead of `T.must()`."
-        RESTRICT_ON_SEND = [:must].freeze
+        MSG = "Use `.not_nil!` instead of `T.%<method>s()`."
+        RESTRICT_ON_SEND = [:must, :must_because].freeze
 
         COMMA_BYTE = ",".ord
         private_constant :COMMA_BYTE
@@ -19,16 +19,21 @@ module RuboCop
 
         #: (RuboCop::AST::SendNode) -> void
         def on_send(node)
-          return unless (argument = extract_t_must_argument(node))
+          return unless (argument = extract_assertion_argument(node))
 
-          if nested_t_must?(node)
-            add_offense(node, message: MSG)
+          block = node.block_node if node.method?(:must_because)
+          target = block || node
+          message = format(MSG, method: node.method_name)
+
+          if nested_assertion?(node) || (block && contains_heredoc?(block))
+            add_offense(target, message:)
           else
             replacement = replacement_for(argument)
             correction = correction_for(node, argument, replacement)
+            correction = commented_correction(block, correction) if block
 
-            add_offense(node, message: MSG) do |corrector|
-              corrector.replace(node, correction)
+            add_offense(target, message:) do |corrector|
+              corrector.replace(target, correction)
             end
           end
         end
@@ -36,10 +41,10 @@ module RuboCop
         private
 
         #: (RuboCop::AST::SendNode) -> RuboCop::AST::Node?
-        def extract_t_must_argument(node)
+        def extract_assertion_argument(node)
           receiver = node.receiver
           return unless receiver.is_a?(RuboCop::AST::ConstNode)
-          return unless receiver.short_name == :T && node.method?(:must) && node.arguments.one?
+          return unless receiver.short_name == :T && RESTRICT_ON_SEND.include?(node.method_name) && node.arguments.one?
 
           namespace = receiver.namespace
           return unless namespace.nil? || namespace.cbase_type?
@@ -93,10 +98,30 @@ module RuboCop
         end
 
         #: (RuboCop::AST::SendNode) -> bool
-        def nested_t_must?(node)
-          node.each_ancestor(:send).any? do |ancestor|
-            ancestor.is_a?(RuboCop::AST::SendNode) && extract_t_must_argument(ancestor)
+        def nested_assertion?(node)
+          node.each_ancestor(:send, :block, :numblock, :itblock).any? do |ancestor|
+            send_node = ancestor.is_a?(RuboCop::AST::SendNode) ? ancestor : ancestor.send_node
+            !send_node.equal?(node) && send_node.is_a?(RuboCop::AST::SendNode) && extract_assertion_argument(send_node)
           end
+        end
+
+        #: (RuboCop::AST::BlockNode, String) -> String
+        def commented_correction(block, correction)
+          indentation = block.source_range.source_line[/\A\s*/]
+          reason_range = block.source_range.with(
+            begin_pos: block.loc.begin.end_pos,
+            end_pos: block.loc.end.begin_pos,
+          )
+          reason = reason_range.source
+          body = block.body
+          if body && (body.str_type? || body.dstr_type?) && ["\"", "'"].include?(body.loc.begin&.source)
+            reason.slice!(body.loc.end.begin_pos - reason_range.begin_pos)
+            reason.slice!(body.loc.begin.begin_pos - reason_range.begin_pos)
+          end
+          comments = reason.strip.lines.map { |line| "#{indentation}  # #{line.strip}\n" }.join
+          return "(\n#{comments}#{correction.delete_prefix("(\n")}" if correction.start_with?("(\n")
+
+          "(\n#{comments}#{indentation}  #{correction}\n#{indentation})"
         end
 
         #: (RuboCop::AST::Node) -> bool
