@@ -16,7 +16,7 @@ And then run `bundle install`.
 
 ### RuboCop Cops
 
-This gem ships with RuboCop cops that we recommend you enable for your application. You can do so by adding it to the `plugins` list of your `rubocop.yml`:
+This gem ships with RuboCop cops that we recommend you enable for your application. They require RuboCop 1.72.0 or later in your bundle, which `type_toolkit` does not install for you. You can enable them by adding the plugin to the `plugins` list of your `rubocop.yml`:
 
 ```yml
 plugins:
