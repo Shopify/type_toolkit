@@ -26,6 +26,12 @@ module TypeToolkit
         MSG
       end
 
+      if is_singleton_method && is_a?(TypeToolkit::Interface)
+        singleton_class.remove_method(method_name)
+        raise TypeError,
+          "Interfaces can't declare abstract singleton methods. Define instance methods instead."
+      end
+
       # The `method_owner` is the class whose method table stores the abstract method.
       #
       # Example:

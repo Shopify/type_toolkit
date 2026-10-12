@@ -18,6 +18,18 @@ module TypeToolkit
       mod.extend(TypeToolkit::DSL)
       mod.extend(TypeToolkit::MethodDefRecorder)
       mod.extend(TypeToolkit::HasAbstractMethods)
+      mod.singleton_class.extend(TypeToolkit::InterfaceSingletonClass)
+    end
+  end
+
+  module InterfaceSingletonClass
+    #: (Symbol) -> bot
+    def abstract(method_name)
+      #: self as Module[top]
+
+      remove_method(method_name) if method_defined?(method_name) || private_method_defined?(method_name)
+      raise TypeError,
+        "Interfaces can't declare abstract singleton methods. Define instance methods instead."
     end
   end
 
