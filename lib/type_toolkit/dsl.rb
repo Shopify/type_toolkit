@@ -43,7 +43,15 @@ module TypeToolkit
 
       # Register the fact that this method is meant to be abstract,
       # used by APIs like `abstract_method_declared?` and `Method#abstract?`
-      method_owner.__register_abstract_method(method_name)
+      method_visibility = if method_owner.public_instance_methods(false).include?(method_name) # rubocop:disable Style/ModuleMemberExistenceCheck
+        :public
+      elsif method_owner.protected_instance_methods(false).include?(method_name) # rubocop:disable Style/ModuleMemberExistenceCheck
+        :protected
+      else
+        :private
+      end
+
+      method_owner.__register_abstract_method(method_name, method_visibility)
 
       # We never want the empty "stub" method to be called, so we remove it. This has one of 3 effects:
       #

@@ -33,7 +33,11 @@ module TypeToolkit
 
     #: (Symbol, ?bool) -> bool
     def respond_to_missing?(method_name, include_private = false)
-      self.class.abstract_method_declared?(method_name) || super
+      if self.class.abstract_method?(method_name)
+        return include_private || self.class.__abstract_method_visibility(method_name) == :public
+      end
+
+      super
     end
   end
 end

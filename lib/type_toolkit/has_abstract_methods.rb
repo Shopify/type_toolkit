@@ -10,11 +10,32 @@ module TypeToolkit
   # In case 2, the storage belongs two levels up, in the singleton class of Foo (`Foo::<Foo>`)
   module HasAbstractMethods
     # Private API, do not use directly. Only meant to be called from the `abstract` macro.
-    #: (Symbol) -> void
-    def __register_abstract_method(method_name) # :nodoc:
+    #: (Symbol, Symbol) -> void
+    def __register_abstract_method(method_name, visibility) # :nodoc:
       (
         @__abstract_methods ||= Set.new #: Set[Symbol]?
       ) << method_name
+
+      (
+        @__abstract_method_visibilities ||= {} #: Hash[Symbol, Symbol]?
+      )[method_name] = visibility
+    end
+
+    #: (Symbol) -> Symbol?
+    def __abstract_method_visibility(method_name) # :nodoc:
+      #: self as Module[top]
+
+      if @__abstract_method_visibilities&.key?(method_name)
+        return @__abstract_method_visibilities[method_name]
+      end
+
+      included_modules.each do |mod|
+        next unless mod.is_a?(HasAbstractMethods) && mod.abstract_method_declared?(method_name)
+
+        return mod.__abstract_method_visibility(method_name)
+      end
+
+      super if defined?(super)
     end
 
     # Returns all methods that were marked abstract (even those which are implemented).

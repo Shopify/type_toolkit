@@ -12,6 +12,18 @@ module TypeToolkit
       abstract def m2 = assert_never_called!
     end
 
+    module NonPublicInterface
+      interface!
+
+      private
+
+      abstract def private_method; end
+
+      protected
+
+      abstract def protected_method; end
+    end
+
     # A normal class that's completely unrelated `SimpleInterface`.
     class NonImpl
       def m1 = "NonImpl#m1"
@@ -37,6 +49,23 @@ module TypeToolkit
 
       def m1 = "FullImpl#m1"
       def m2 = "FullImpl#m2"
+    end
+
+    class NonPublicImpl
+      include NonPublicInterface
+    end
+
+    class InheritedNonPublicImpl < NonPublicImpl
+    end
+
+    class NonPublicConcreteImpl
+      include SimpleInterface
+
+      private def m1 = "private"
+      protected def m2 = "protected"
+    end
+
+    class InheritedNonPublicConcreteImpl < NonPublicConcreteImpl
     end
 
     # A class that provides a partial implementation of `SimpleInterface` for `PartiallyInheritsItsImpl`.
@@ -119,6 +148,32 @@ module TypeToolkit
         it "returns true for abstract methods" do
           assert SimpleInterface.abstract_method_declared?(:m1)
           assert SimpleInterface.abstract_method_declared?(:m2)
+        end
+      end
+    end
+
+    describe "A class that includes non-public abstract methods" do
+      before do
+        @x = NonPublicImpl.new
+      end
+
+      it "honours visibility for abstract methods" do
+        [@x, InheritedNonPublicImpl.new].each do |object|
+          refute object.respond_to?(:private_method)
+          assert object.respond_to?(:private_method, true)
+          refute object.respond_to?(:protected_method)
+          assert object.respond_to?(:protected_method, true)
+        end
+      end
+    end
+
+    describe "A class that implements abstract methods with non-public visibility" do
+      it "uses the concrete implementation's visibility" do
+        [NonPublicConcreteImpl.new, InheritedNonPublicConcreteImpl.new].each do |object|
+          [:m1, :m2].each do |method_name|
+            refute object.respond_to?(method_name)
+            assert object.respond_to?(method_name, true)
+          end
         end
       end
     end
