@@ -58,6 +58,16 @@ module TypeToolkit
     class InheritedNonPublicImpl < NonPublicImpl
     end
 
+    class NonPublicConcreteImpl
+      include SimpleInterface
+
+      private def m1 = "private"
+      protected def m2 = "protected"
+    end
+
+    class InheritedNonPublicConcreteImpl < NonPublicConcreteImpl
+    end
+
     # A class that provides a partial implementation of `SimpleInterface` for `PartiallyInheritsItsImpl`.
     class PartialParent
       def m1 = "PartialParent#m1"
@@ -153,6 +163,17 @@ module TypeToolkit
           assert object.respond_to?(:private_method, true)
           refute object.respond_to?(:protected_method)
           assert object.respond_to?(:protected_method, true)
+        end
+      end
+    end
+
+    describe "A class that implements abstract methods with non-public visibility" do
+      it "uses the concrete implementation's visibility" do
+        [NonPublicConcreteImpl.new, InheritedNonPublicConcreteImpl.new].each do |object|
+          [:m1, :m2].each do |method_name|
+            refute object.respond_to?(method_name)
+            assert object.respond_to?(method_name, true)
+          end
         end
       end
     end
