@@ -29997,6 +29997,13 @@ module RuboCop::Cop::MinBranchesCount
   def min_branches_count?(node); end
 end
 
+module RuboCop::Cop::Minitest; end
+
+class RuboCop::Cop::Minitest::MultipleAssertions < ::RuboCop::Cop::Base
+  include ::RuboCop::Cop::VisibilityHelp
+  include ::RuboCop::Cop::DefNode
+end
+
 # Common code for indenting the first elements in multiline
 # array literals, hash literals, and method definitions.
 #

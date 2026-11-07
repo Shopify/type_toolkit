@@ -104,7 +104,7 @@ class ERB
   # </html>
   # ```
   #
-  # source://erb//lib/erb.rb#1170
+  # source://erb//lib/erb.rb#1173
   def def_class(superklass = T.unsafe(nil), methodname = T.unsafe(nil)); end
 
   # :markup: markdown
@@ -153,7 +153,7 @@ class ERB
   # # => "foo 123"
   # ```
   #
-  # source://erb//lib/erb.rb#1113
+  # source://erb//lib/erb.rb#1116
   def def_module(methodname = T.unsafe(nil)); end
 
   # :markup: markdown

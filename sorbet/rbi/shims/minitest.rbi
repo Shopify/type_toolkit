@@ -35,9 +35,12 @@ module Minitest
       def it(desc = T.unsafe(nil), &block); end
 
       sig do
-        params(block: T.proc.bind(T.attached_class).void).void
+        params(
+          type: T.anything,
+          block: T.proc.bind(T.attached_class).void,
+        ).void
       end
-      def before(&block); end
+      def before(type = T.unsafe(nil), &block); end
     end
   end
 end

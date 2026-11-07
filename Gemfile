@@ -12,6 +12,7 @@ gem "sorbet"
 gem "tapioca", ">= 0.17", require: false
 gem "minitest", "~> 5.16"
 
+gem "rubocop", ">= 1.72.0", require: false
 gem "rubocop-shopify", require: false
 gem "rubocop-minitest", require: false
 gem "rubocop-rake", require: false
