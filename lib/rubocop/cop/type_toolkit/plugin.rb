@@ -13,7 +13,7 @@ module RuboCop
             name: "rubocop-type_toolkit",
             version: ::TypeToolkit::VERSION,
             homepage: "https://github.com/Shopify/type_toolkit",
-            description: "Detects misuse of UnexpectedNilError.",
+            description: "RuboCop rules for Type Toolkit.",
           )
         end
 

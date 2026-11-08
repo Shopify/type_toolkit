@@ -6,7 +6,7 @@ Take this example:
 class Parent
   def m = "Parent#m"
 end
-  
+
 module I
   interface!
 
@@ -17,7 +17,7 @@ class Child < Parent
   include I
 end
 
-Child.new.m 
+Child.new.m
 # => Vanilla Ruby:   raises (from `I#m`)
 # => With this gem: `Parent#m`
 ```
@@ -117,3 +117,142 @@ Cons:
   - All the downsides of doing this the hand-written way.
   - To determine if a method is abstract or not, every `sig` needs to have its block evaluated, to see if it calls `abstract`.
   - This used to be slower because it was defined via `defined_methods` with a block body. This produces a slower kind of method (`VM_METHOD_TYPE_BMETHOD`), than the equivalent code via `def` (`VM_METHOD_TYPE_ISEQ`). This was fixed in [this PR](https://github.com/sorbet/sorbet/pull/8238), which switch to using `module_eval` to define the method via `def`.
+
+# Other languages
+
+Most languages with abstract methods are ahead-of-time compiled. They don't have this issue because their compilers eagerly catch issues. Don't have the issue of runtime stub methods clobbering access to inherited implementation.
+
+Python and Elixir are usual comparison points, as interpreted languages with growing static typing features.
+
+## Python
+
+Python has both [Abstract Base Classes](https://typing.python.org/en/latest/guides/libraries.html#abstract-classes-and-methods) and [Protocols](https://typing.python.org/en/latest/spec/protocol.html), and the two work differently.
+
+Abstract classes don't have the inherited implementation problem, because they eagerly defend against instantiating a class with any unimplemented abstract methods. If you circumvent this defence, you just hit the `NotImplementedError` rather than an inherited implementation of the method.
+
+```python
+#!/usr/bin/env python3
+
+from abc import ABC, abstractmethod
+
+class Parent:
+  def m(self) -> str:
+    return "Parent.m"
+
+class I(ABC):
+  @abstractmethod
+  def m(self) -> str:
+    """Subclasses must override"""
+    raise NotImplementedError()
+
+class Child(I, Parent):
+  pass
+
+# print(Child.mro()) # Equivalent to Ruby's ancestor chain
+
+try:
+  Child() # Can't instantiate abstract class Child without an implementation for abstract method 'm'
+except TypeError as e:
+  print(e)
+  pass
+
+# Force the instantiation anyway
+Child.__abstractmethods__ = frozenset()
+Child().m() # => NotImplementedError
+```
+
+[Implicitly implementing a Protocol](https://typing.python.org/en/latest/spec/protocol.html#protocols:~:text=The%20default%20implementations%20cannot%20be%20used%20if%20the%20assignable%2Dto%20relationship%20is%20implicit%20and%20only%20structural%20%E2%80%93%20the%20semantics%20of%20inheritance%20is%20not%20changed%2E) doesn't have the problem, because the Protocol is not made part of the MRO (equivalent to Ruby's ancestor chain):
+
+```python
+#!/usr/bin/env python3
+
+from typing import Protocol
+from abc import abstractmethod
+
+class Parent:
+  def m(self) -> str:
+    return "Parent.m"
+
+class MyProtocol(Protocol):
+  @abstractmethod
+  def m(self) -> str:
+    raise NotImplementedError
+
+class ImplicitChild(Parent): # <- MyProtocol not in this list
+  pass
+
+# Equivalent to Ruby's ancestor chain. `MyProtocol` is not in it.
+print(ImplicitChild.mro()) # => [<class 'ImplicitChild'>, <class 'Parent'>, <class 'object'>]
+
+# Calls the inherited implementation, no problem:
+print(ImplicitChild().m()) # => "Parent.m"
+```
+
+However, the moment you make the Protocol implementation explicit, you get the same problem as the Abstract Base Class case:
+
+```python
+# ... continued from previous script
+
+class ExplicitChild(MyProtocol, Parent):
+  pass
+
+# Equivalent to Ruby's ancestor chain. `MyProtocol` is in it.
+print(ExplicitChild.mro()) # => [<class 'ExplicitChild'>, <class 'MyProtocol'>, <class 'typing.Protocol'>, <class 'typing.Generic'>, <class 'Parent'>, <class 'object'>]
+
+try:
+  ExplicitChild() # Can't instantiate abstract class Child without an implementation for abstract method 'm'
+except TypeError as e:
+  print(e)
+  pass
+
+# Force the instantiation anyway
+ExplicitChild.__abstractmethods__ = frozenset()
+ExplicitChild().m() # => NotImplementedError
+```
+
+The [docs](https://typing.python.org/en/latest/spec/protocol.html#protocols:~:text=defined-,A,instantiated) are explicit about this:
+
+> A class can explicitly inherit from multiple protocols and also from normal classes. In this case methods are resolved using normal MRO and a type checker verifies that all member assignability is correct. The semantics of `@abstractmethod` is not changed; all of them must be implemented by an explicit subclass before it can be instantiated.
+
+## Elixir
+
+Elixir doesn't have class-style inheritance. It's still interesting to see how it handles its equivalent to abstract methods: protocol functions.
+When statically compiled, `elixirc` statically catches unimplemented methods and fails the build.
+
+When dynamically executed (e.g. `iex`, `elixir`) will raise warnings for unimplemented methods. It records extra runtime metadata, used to surface more concrete error messages.
+
+```elixir
+#!/usr/bin/env elixir
+
+defprotocol Size do
+  def size(value)
+  def empty?(value)
+end
+
+# Protocol requirements are reified at runtime, can be reflected:
+IO.inspect Size.__protocol__(:functions) # [empty?: 1, size: 1]
+
+defimpl Size, for: List do
+  def size(value), do: length(value)
+
+  # Intentionally missing `def empty?`, Elixir warns:
+  # > warning: function empty?/1 required by protocol Size is not implemented
+end
+
+# Calling an implemented function
+IO.inspect Size.size([]) # => 0
+
+try do
+  Size.empty?([]) # Calling an unimplemented function
+rescue
+  e in UndefinedFunctionError ->
+    # Replicates what e.g. `iex` would print.
+    {blame, _} = Exception.blame(:error, e, __STACKTRACE__)
+    IO.puts "(UndefinedFunctionError) #{blame.message}"
+    # => (UndefinedFunctionError) function Size.List.empty?/1 is undefined or private, but the behaviour Size expects it to be present
+end
+
+# Not how it knows that the `Size` behaviour expects it.
+# Compare with the more generic error raised otherwise:
+Size.foo # => (UndefinedFunctionError) function Size.foo/0 is undefined or private
+```
